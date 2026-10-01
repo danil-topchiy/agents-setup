@@ -1,0 +1,27 @@
+.DS_Store
+# Private dotenv values stay local; commit only the credential-free example.
+.env
+.env.*
+!.env.example
+.local/
+.openclaw/
+.hermes/
+operator-paths.sh
+*.pem
+*.key
+*.db
+*.db-*
+*.sqlite*
+*.log
+# OpenClaw creates these alongside the tracked active native config.
+config/openclaw.json.bak*
+config/openclaw.json.last-good
+config/openclaw.json.rejected.*
+config/openclaw.json.tmp*
+# Account metadata and backups stay private even though settings are versioned.
+config/*.private.json
+config/*.private.json.*
+**/output/
+**/memory/
+__pycache__/
+*.pyc

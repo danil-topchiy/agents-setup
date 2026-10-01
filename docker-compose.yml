@@ -1,0 +1,81 @@
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:2026.9.6-browser
+    user: "${WORKSHOP_UID:-1000}:${WORKSHOP_GID:-1000}"
+    init: true
+    restart: unless-stopped
+    working_dir: /project
+    environment:
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
+      XDG_CACHE_HOME: /home/node/.openclaw/cache
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:?Run python3 docker/init.py env first}"
+      OPENCLAW_BROWSER_HEADLESS: "1"
+      WORKSHOP_UID: "${WORKSHOP_UID:-1000}"
+      WORKSHOP_GID: "${WORKSHOP_GID:-1000}"
+    env_file: .local/openclaw.env
+    volumes:
+      - openclaw-state:/home/node/.openclaw
+      - openclaw-secrets:/home/node/.config/openclaw
+      - type: bind
+        source: "${DEMO_PROJECT:?Set by docker/init.py env}"
+        target: /project
+        bind:
+          create_host_path: false
+    ports:
+      - "127.0.0.1:18789:18789"
+    networks: [openclaw]
+    shm_size: 1gb
+    cap_drop: [NET_RAW, NET_ADMIN]
+    security_opt: [no-new-privileges:true]
+    command: [openclaw, gateway, --bind, lan, --port, "18789"]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:18789/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  hermes:
+    image: nousresearch/hermes-agent:v2026.9.24
+    restart: unless-stopped
+    working_dir: /project/hermes/project
+    environment:
+      HERMES_UID: "${WORKSHOP_UID:-1000}"
+      HERMES_GID: "${WORKSHOP_GID:-1000}"
+      # Avoid ARM instruction probing crashes in older Docker Desktop VMs.
+      OPENSSL_armcap: "0"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: learner
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_PASSWORD:?Run python3 docker/init.py env first}"
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_SECRET:?Run python3 docker/init.py env first}"
+      DEMO_PROJECT: /project
+      DEMO_HERMES_HOME: /opt/data
+      DEMO_HERMES_PROJECT: /project/hermes/project
+    volumes:
+      - hermes-state:/opt/data
+      - type: bind
+        source: "${DEMO_PROJECT}/hermes"
+        target: /project/hermes
+        bind:
+          create_host_path: false
+      - ./docker:/opt/workshop-bootstrap:ro
+    ports:
+      - "127.0.0.1:9119:9119"
+    networks: [hermes]
+    command: [dashboard, --host, 0.0.0.0, --port, "9119", --no-open]
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9119/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  openclaw-state:
+  openclaw-secrets:
+  hermes-state:
+networks:
+  openclaw:
+  hermes:

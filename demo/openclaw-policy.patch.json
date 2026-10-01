@@ -1,0 +1,76 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "allowTailscale": false
+    },
+    "tailscale": { "mode": "off" },
+    "terminal": { "enabled": false },
+    "cliAgents": { "enabled": false }
+  },
+  "agents": {
+    "defaults": {
+      "skipBootstrap": true,
+      "skills": [],
+      "heartbeat": {
+        "every": "0m"
+      }
+    }
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "tools": {
+    "profile": "minimal",
+    "alsoAllow": [
+      "read",
+      "write"
+    ],
+    "deny": [
+      "edit",
+      "apply_patch",
+      "group:runtime",
+      "group:automation",
+      "group:web",
+      "group:ui",
+      "group:messaging",
+      "group:nodes",
+      "group:plugins",
+      "sessions_spawn",
+      "sessions_send"
+    ],
+    "fs": {
+      "workspaceOnly": true
+    },
+    "exec": {
+      "security": "deny",
+      "ask": "always"
+    },
+    "elevated": {
+      "enabled": false
+    },
+    "sessions": {
+      "visibility": "self"
+    },
+    "agentToAgent": {
+      "enabled": false
+    },
+    "codeMode": {
+      "enabled": false
+    },
+    "toolSearch": false
+  },
+  "browser": { "enabled": false },
+  "cron": { "enabled": false },
+  "hooks": { "enabled": false },
+  "discovery": { "mdns": { "mode": "off" } },
+  "plugins": {
+    "entries": {
+      "anthropic": { "config": { "sessionCatalog": { "enabled": false } } },
+      "codex": { "config": { "sessionCatalog": { "enabled": false } } },
+      "memory-core": { "config": { "dreaming": { "enabled": false } } }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+# Shareable personal-assistant policy for a NEW profile, before model login.
+# Local file/shell tools are opt-in: cwd alone is not a filesystem sandbox.
+terminal:
+  backend: local
+  cwd: "."
+platform_toolsets:
+  cli: [memory, todo, clarify]
+  telegram: [memory, todo, clarify]
+  email: [memory, todo, clarify]
+approvals:
+  mode: manual
+  cron_mode: deny
+  single_query_mode: deny
+  unattended_mode: deny
+agent:
+  max_turns: 20
+  coding_context: "off"
+  disabled_toolsets:
+    - terminal
+    - file
+    - code_execution
+    - browser
+    - computer_use
+    - delegation
+    - cronjob
+    - skills
+    - connections
+    - kanban
+auth:
+  adopt_external_logins: false
+security:
+  redact_secrets: true
+gateway:
+  allow_all_users: false
+  unauthorized_dm_behavior: ignore
+telegram:
+  guest_mode: false
+  observe_unmentioned_group_messages: false
+memory:
+  write_approval: true
+skills:
+  write_approval: true
+  auto_load: []
+tools:
+  tool_search:
+    enabled: "off"
