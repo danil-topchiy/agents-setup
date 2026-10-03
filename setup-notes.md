@@ -124,3 +124,9 @@ generic documentation. No live model, Telegram, or Discord exchange was run.
 - The exporter produced a starter that kept the nine agents and had no
   channels or auth include. Publication scans of tracked files and history,
   the config privacy check, local link checks, and `git diff --check` passed.
+- A separate clone with its own state and an operator's real private values ran
+  the helper end to end: nine Discord bots staged, all nine token identities
+  verified against Discord's `/users/@me`, configuration and instructions
+  applied, `config validate`, `agents list --bindings` (one Discord account per
+  agent) and the privacy check passed. No Gateway was started from that clone,
+  so live bot replies under this configuration remain an operator check.
