@@ -18,8 +18,8 @@ python3 --version
 ```
 
 Allow about 15 GB of free Docker disk space. A busy host may need more RAM;
-the earlier workshop host needed 12 GB allocated. Check ports 18789 and 9119
-before starting and stop only the teaching instance that owns them.
+about 12 GB allocated to Docker has been sufficient. Check ports 18789 and 9119
+before starting and stop only the instance of this setup that owns them.
 
 ## First setup
 
@@ -29,14 +29,15 @@ docker compose config --quiet
 docker compose pull
 docker compose run --rm --user 0 --entrypoint python3 openclaw \
   /project/docker/init.py openclaw
-docker compose run --rm hermes python3 /opt/workshop-bootstrap/init.py hermes
+docker compose run --rm hermes python3 /opt/bootstrap/init.py hermes
 docker compose up -d
 docker compose ps
 ```
 
 The environment helper creates private dashboard credentials in `.env` and
-preserves them on repeat runs. The next two helpers initialize fresh volumes
-from the teaching policy. Skip those two initialization commands when state
+preserves them on repeat runs. The next two helpers initialize fresh volumes:
+OpenClaw gets the tracked agent team and tool policy with container paths,
+Hermes gets its starter context. Skip those two initialization commands when state
 already exists. `up -d` can be repeated.
 
 Wait for **both** services to become healthy. Complete provider login privately:
@@ -126,5 +127,5 @@ helper. Do not source `.env` as a shell script.
 
 Images are pinned to official [OpenClaw](https://github.com/openclaw/openclaw/blob/v2026.9.6/docs/install/docker.md)
 and [Hermes](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/website/docs/user-guide/docker.md)
-releases. The Hermes ARM setting preserves the workaround verified during
-the original workshop preparation.
+releases. The Hermes ARM setting preserves a workaround verified for
+the pinned image on ARM64 hosts.

@@ -18,8 +18,8 @@ def prepare_env(kit=None):
     values = {
         "COMPOSE_PROJECT_NAME": "demo-agents-" + hashlib.sha256(str(project).encode()).hexdigest()[:10],
         "DEMO_PROJECT": str(project),
-        "WORKSHOP_UID": str(os.getuid()),
-        "WORKSHOP_GID": str(os.getgid()),
+        "HOST_UID": str(os.getuid()),
+        "HOST_GID": str(os.getgid()),
         "OPENCLAW_CONFIG_PATH": str(project / "config/openclaw.json"),
         "OPENCLAW_STATE_DIR": str(project / ".local/native/openclaw"),
         "OPENCLAW_HOME": str(project / ".local/native/openclaw-home"),
@@ -53,36 +53,88 @@ def prepare_env(kit=None):
     print(f"Dashboard settings ready in {path}. Existing credentials were preserved.")
 
 
-def prepare_openclaw():
-    state = Path("/home/node/.openclaw")
-    config = state / "openclaw.json"
-    if config.exists():
-        raise ValueError("OpenClaw configuration already exists; skip initialization.")
-    uid, gid = int(os.environ["WORKSHOP_UID"]), int(os.environ["WORKSHOP_GID"])
-    for directory in (state, Path("/home/node/.config/openclaw")):
-        directory.mkdir(parents=True, exist_ok=True)
-        os.chown(directory, uid, gid)
-        directory.chmod(0o700)
-    data = json.loads(Path("/project/config/openclaw-policy.patch.json").read_text())
+INSTANCE_KEYS = ("auth", "channels", "bindings", "commands", "wizard", "meta", "broadcast")
+WORKSPACE = "${OPENCLAW_WORKSPACE_DIR}"
+
+
+def portable_config(project):
+    """Keep the tracked agent roster and tool policy; drop accounts, channels, models and runtime metadata.
+
+    Without a tracked config/openclaw.json, the starting policy patch provides a
+    single main agent.
+    """
+    project = Path(project)
+    tracked = project / "config/openclaw.json"
+    if tracked.is_file():
+        data = json.loads(tracked.read_text())
+        channel_plugins = set(data.get("channels", {}))
+        for key in INSTANCE_KEYS:
+            data.pop(key, None)
+        for plugin in channel_plugins:
+            data.get("plugins", {}).get("entries", {}).pop(plugin, None)
+        agents = data.setdefault("agents", {})
+        entries = agents.setdefault("entries", {})
+        for entry in (agents.setdefault("defaults", {}), *entries.values()):
+            entry.pop("model", None)
+            entry.pop("models", None)
+        for agent_id, entry in entries.items():
+            for key in ("workspace", "agentDir"):
+                value = entry.get(key)
+                if isinstance(value, str) and not value.startswith("${OPENCLAW_"):
+                    raise ValueError(f"Agent {agent_id} uses a literal {key}; use launcher variables in config/openclaw.json.")
+        entries.setdefault("main", {}).update({"workspace": WORKSPACE, "agentDir": "${OPENCLAW_AGENT_DIR}"})
+        data.setdefault("gateway", {}).pop("trustedProxies", None)
+    else:
+        data = json.loads((project / "config/openclaw-policy.patch.json").read_text())
+        data["agents"]["entries"] = {"main": {"workspace": WORKSPACE, "agentDir": "${OPENCLAW_AGENT_DIR}"}}
+    data.setdefault("gateway", {}).update({"port": 18789, "controlUi": {
+        "allowedOrigins": ["http://127.0.0.1:18789", "http://localhost:18789"]}})
+    data["gateway"].setdefault("auth", {})["token"] = {
+        "source": "env", "provider": "default", "id": "OPENCLAW_GATEWAY_TOKEN"}
+    data["agents"].setdefault("defaults", {})["workspace"] = WORKSPACE
+    data["logging"] = {"file": "${OPENCLAW_LOG_FILE}"}
+    data["telemetry"] = {"enabled": False}
+    return data
+
+
+def docker_config(project, chromium):
+    """The portable config with container paths; agent state stays in the private volume."""
+    data = json.loads(json.dumps(portable_config(project)).replace(WORKSPACE, "/project/openclaw/workspace"))
+    for entry in data["agents"]["entries"].values():
+        entry.pop("agentDir", None)
+    data.pop("logging", None)
+    if "${" in json.dumps(data):
+        raise ValueError("The tracked config uses a launcher variable the Docker route does not provide.")
     data["gateway"].update({
         "bind": "lan", "port": 18789,
         "auth": {"mode": "token", "allowTailscale": False},
         "controlUi": {"allowedOrigins": ["http://127.0.0.1:18789", "http://localhost:18789"]},
     })
-    workspace = "/project/openclaw/workspace"
-    data["agents"]["defaults"]["workspace"] = workspace
-    data["agents"]["entries"] = {"main": {"workspace": workspace}}
+    data.setdefault("browser", {}).update({"headless": True, "executablePath": str(chromium)})
+    return data
+
+
+def prepare_openclaw():
+    state = Path("/home/node/.openclaw")
+    config = state / "openclaw.json"
+    if config.exists():
+        raise ValueError("OpenClaw configuration already exists; skip initialization.")
+    uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
+    for directory in (state, Path("/home/node/.config/openclaw")):
+        directory.mkdir(parents=True, exist_ok=True)
+        os.chown(directory, uid, gid)
+        directory.chmod(0o700)
     browsers = Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/home/node/.cache/ms-playwright"))
     chromium = sorted(browsers.glob("chromium-*/chrome-linux*/chrome"))
     if len(chromium) != 1:
         raise ValueError("Expected one bundled Chromium binary; use the pinned browser image.")
-    data["browser"].update({"headless": True, "executablePath": str(chromium[0])})
+    data = docker_config(Path("/project"), chromium[0])
     with config.open("x") as output:
         json.dump(data, output, indent=2)
         output.write("\n")
     os.chown(config, uid, gid)
     config.chmod(0o600)
-    print("Initialized the file-only OpenClaw policy. Provider login remains to be done.")
+    print("Initialized the OpenClaw agent team and tool policy. Provider login remains to be done.")
 
 
 def env_values(path):
@@ -105,9 +157,9 @@ def env_values(path):
 
 def prepare_hermes(state=Path("/opt/data"), source=Path("/project/hermes"),
                    defaults=Path("/opt/hermes/.env.example"), cwd="/project/hermes/project"):
-    marker = state / ".workshop-initialized"
-    if marker.exists():
-        raise ValueError("Hermes workshop settings already exist; skip initialization.")
+    marker = state / ".starter-initialized"
+    if marker.exists() or (state / ".workshop-initialized").exists():
+        raise ValueError("Hermes starter settings already exist; skip initialization.")
     if any((state / name).exists() for name in ("auth.json", "state.db")):
         raise ValueError("Hermes account/session state exists; preserve it and review manually.")
     original = env_values(defaults)
@@ -124,7 +176,7 @@ def prepare_hermes(state=Path("/opt/data"), source=Path("/project/hermes"),
         destination = state / name if name == "SOUL.md" else state / "memories" / name
         shutil.copy2(source / "context" / name, destination)
         destination.chmod(0o600)
-    marker.write_text("Workshop templates copied before model login.\n")
+    marker.write_text("Starter templates copied before model login.\n")
     print("Initialized Hermes. Provider login remains to be done.")
 
 

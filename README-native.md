@@ -86,7 +86,11 @@ python3 scripts/native.py openclaw config patch --file "$DEMO_PROJECT/config/ope
 python3 scripts/native.py openclaw config set agents.defaults.workspace '${OPENCLAW_WORKSPACE_DIR}'
 python3 scripts/native.py openclaw config set agents.entries.main.workspace '${OPENCLAW_WORKSPACE_DIR}'
 python3 scripts/native.py openclaw config validate
+python3 scripts/native.py openclaw agents list
 ```
+
+The agent list should show Chief of Staff and the eight specialists with
+workspaces under this checkout. Onboarding picks the model for all of them.
 
 Set up [Tailscale](README-tailscale.md), then configure private URLs **before
 starting the servers**:

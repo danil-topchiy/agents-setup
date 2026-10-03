@@ -1,7 +1,7 @@
 services:
   openclaw:
     image: ghcr.io/openclaw/openclaw:2026.9.6-browser
-    user: "${WORKSHOP_UID:-1000}:${WORKSHOP_GID:-1000}"
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     init: true
     restart: unless-stopped
     working_dir: /project
@@ -13,8 +13,8 @@ services:
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:?Run python3 docker/init.py env first}"
       OPENCLAW_BROWSER_HEADLESS: "1"
-      WORKSHOP_UID: "${WORKSHOP_UID:-1000}"
-      WORKSHOP_GID: "${WORKSHOP_GID:-1000}"
+      HOST_UID: "${HOST_UID:-1000}"
+      HOST_GID: "${HOST_GID:-1000}"
     env_file: .local/openclaw.env
     volumes:
       - openclaw-state:/home/node/.openclaw
@@ -43,8 +43,8 @@ services:
     restart: unless-stopped
     working_dir: /project/hermes/project
     environment:
-      HERMES_UID: "${WORKSHOP_UID:-1000}"
-      HERMES_GID: "${WORKSHOP_GID:-1000}"
+      HERMES_UID: "${HOST_UID:-1000}"
+      HERMES_GID: "${HOST_GID:-1000}"
       # Avoid ARM instruction probing crashes in older Docker Desktop VMs.
       OPENSSL_armcap: "0"
       HERMES_DASHBOARD_BASIC_AUTH_USERNAME: learner
@@ -60,7 +60,7 @@ services:
         target: /project/hermes
         bind:
           create_host_path: false
-      - ./docker:/opt/workshop-bootstrap:ro
+      - ./docker:/opt/bootstrap:ro
     ports:
       - "127.0.0.1:9119:9119"
     networks: [hermes]

@@ -1,7 +1,8 @@
 # Telegram and AgentMail
 
 After the main setup, run commands from this root and enter credentials
-privately. Choose **one** route for these shortcuts.
+privately. Choose **one** route for these shortcuts. Discord has its own
+guide: [one bot per agent](README-discord-collaboration.md).
 
 Docker:
 
@@ -60,6 +61,13 @@ oc pairing approve telegram CODE
 Use your observed `CODE` and test a reply. Enable specific groups/users only
 if needed. See
 [OpenClaw Telegram setup](https://docs.openclaw.ai/channels/telegram/setup).
+
+The bot talks to Chief of Staff, which delegates to the other agents and
+reports their results in the same chat; the team needs no further Telegram
+setup. Telegram bots cannot read each other's messages, so visible
+bot-to-bot handoffs are a Discord feature. OpenClaw can run several Telegram
+accounts on one Gateway, each bound to an agent (`channels add --account <id>
+--agent <id>`), if you want a specialist reachable through its own bot.
 
 ### Hermes Telegram
 
@@ -133,9 +141,9 @@ Append the same owner binding for channel `agentmail`, account `default`.
 Restart OpenClaw; run
 `oc plugins inspect agentmail --runtime` and `oc channels status --probe`.
 Leave `AGENTMAIL_WEBHOOK_SECRET` unset to use outbound WebSocket delivery.
-Email it from your allowed address and verify a reply. The workshop policy
-blocks shell/plugin tools; using the bundled CLI skill needs a narrow policy
-change.
+Email it from your allowed address and verify a reply. The starting policy
+blocks plugin tools and asks before unlisted shell commands; using the bundled
+CLI skill needs a narrow policy change.
 
 ### Hermes AgentMail
 

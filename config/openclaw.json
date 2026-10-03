@@ -35,12 +35,167 @@
       "heartbeat": {
         "every": "0m"
       },
-      "workspace": "${OPENCLAW_WORKSPACE_DIR}"
+      "workspace": "${OPENCLAW_WORKSPACE_DIR}",
+      "systemAgent": {
+        "agentId": "main"
+      },
+      "subagents": {
+        "allowAgents": [
+          "main",
+          "cto",
+          "swe",
+          "qa",
+          "ui-ux",
+          "content",
+          "generalist",
+          "infrastructure",
+          "sales"
+        ],
+        "requireAgentId": true,
+        "maxSpawnDepth": 2,
+        "maxChildrenPerAgent": 2,
+        "maxConcurrent": 4,
+        "runTimeoutSeconds": 600,
+        "delegationMode": "suggest"
+      }
     },
+    "ownership": "explicit",
     "entries": {
       "main": {
+        "name": "Chief of Staff",
         "workspace": "${OPENCLAW_WORKSPACE_DIR}",
-        "agentDir": "${OPENCLAW_AGENT_DIR}"
+        "agentDir": "${OPENCLAW_AGENT_DIR}",
+        "identity": {
+          "name": "Chief of Staff"
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@ChiefOfStaff\\b",
+            "@CoS\\b"
+          ]
+        }
+      },
+      "cto": {
+        "name": "CTO",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/cto",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/cto/agent",
+        "identity": {
+          "name": "CTO",
+          "emoji": "🧭",
+          "theme": "Calm, decisive, and practical."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@CTO\\b"
+          ]
+        }
+      },
+      "swe": {
+        "name": "SWE",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/swe",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/swe/agent",
+        "identity": {
+          "name": "SWE",
+          "emoji": "🛠️",
+          "theme": "Focused, careful, and straightforward."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@SWE\\b"
+          ]
+        }
+      },
+      "qa": {
+        "name": "QA",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/qa",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/qa/agent",
+        "identity": {
+          "name": "QA",
+          "emoji": "🔎",
+          "theme": "Calm, skeptical, and evidence-first."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@QA\\b"
+          ]
+        }
+      },
+      "ui-ux": {
+        "name": "UI/UX",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/ui-ux",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/ui-ux/agent",
+        "identity": {
+          "name": "UI/UX",
+          "emoji": "🎨",
+          "theme": "Observant, thoughtful, and precise."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@UIUX\\b",
+            "@UI-UX\\b"
+          ]
+        }
+      },
+      "content": {
+        "name": "Content",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/content",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/content/agent",
+        "identity": {
+          "name": "Content",
+          "emoji": "✍️",
+          "theme": "Clear, curious, and attentive to voice."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@Content\\b"
+          ]
+        }
+      },
+      "generalist": {
+        "name": "Generalist",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/generalist",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/generalist/agent",
+        "identity": {
+          "name": "Generalist",
+          "emoji": "🧩",
+          "theme": "Resourceful, adaptable, and grounded."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@Generalist\\b"
+          ]
+        }
+      },
+      "infrastructure": {
+        "name": "Infrastructure",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/infrastructure",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/infrastructure/agent",
+        "identity": {
+          "name": "Infrastructure",
+          "emoji": "🏗️",
+          "theme": "Methodical, steady, and operationally precise."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@Infrastructure\\b",
+            "@Infra\\b"
+          ]
+        }
+      },
+      "sales": {
+        "name": "Sales",
+        "workspace": "${OPENCLAW_WORKSPACE_DIR}/agents/sales",
+        "agentDir": "${OPENCLAW_STATE_DIR}/agents/sales/agent",
+        "identity": {
+          "name": "Sales",
+          "emoji": "🤝",
+          "theme": "Curious, commercially aware, and respectful."
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@Sales\\b"
+          ]
+        }
       }
     }
   },
@@ -51,33 +206,37 @@
     "profile": "minimal",
     "alsoAllow": [
       "read",
-      "write"
+      "write",
+      "exec",
+      "skill_workshop",
+      "group:memory",
+      "sessions_spawn",
+      "sessions_yield",
+      "subagents"
     ],
     "deny": [
       "edit",
       "apply_patch",
-      "group:runtime",
       "group:automation",
       "group:web",
       "group:ui",
       "group:messaging",
       "group:nodes",
       "group:plugins",
-      "sessions_spawn",
       "sessions_send"
     ],
     "fs": {
       "workspaceOnly": true
     },
     "exec": {
-      "security": "deny",
-      "ask": "always"
+      "security": "allowlist",
+      "ask": "on-miss"
     },
     "elevated": {
       "enabled": false
     },
     "sessions": {
-      "visibility": "self"
+      "visibility": "tree"
     },
     "agentToAgent": {
       "enabled": false
@@ -118,6 +277,7 @@
         }
       },
       "memory-core": {
+        "enabled": true,
         "config": {
           "dreaming": {
             "enabled": false
@@ -126,10 +286,109 @@
       }
     }
   },
+  "skills": {
+    "entries": {
+      "1password": {
+        "enabled": false
+      },
+      "apple-notes": {
+        "enabled": false
+      },
+      "apple-reminders": {
+        "enabled": false
+      },
+      "bear-notes": {
+        "enabled": false
+      },
+      "blucli": {
+        "enabled": false
+      },
+      "camsnap": {
+        "enabled": false
+      },
+      "coding-agent": {
+        "enabled": false
+      },
+      "eightctl": {
+        "enabled": false
+      },
+      "gifgrep": {
+        "enabled": false
+      },
+      "goplaces": {
+        "enabled": false
+      },
+      "himalaya": {
+        "enabled": false
+      },
+      "mcporter": {
+        "enabled": false
+      },
+      "model-usage": {
+        "enabled": false
+      },
+      "nano-pdf": {
+        "enabled": false
+      },
+      "obsidian": {
+        "enabled": false
+      },
+      "openai-whisper": {
+        "enabled": false
+      },
+      "openai-whisper-api": {
+        "enabled": false
+      },
+      "openhue": {
+        "enabled": false
+      },
+      "oracle": {
+        "enabled": false
+      },
+      "ordercli": {
+        "enabled": false
+      },
+      "peekaboo": {
+        "enabled": false
+      },
+      "sag": {
+        "enabled": false
+      },
+      "sherpa-onnx-tts": {
+        "enabled": false
+      },
+      "songsee": {
+        "enabled": false
+      },
+      "sonoscli": {
+        "enabled": false
+      },
+      "spotify-player": {
+        "enabled": false
+      },
+      "things-mac": {
+        "enabled": false
+      },
+      "tmux": {
+        "enabled": false
+      },
+      "trello": {
+        "enabled": false
+      }
+    },
+    "workshop": {
+      "autonomous": {
+        "mode": "auto"
+      }
+    }
+  },
   "logging": {
     "file": "${OPENCLAW_LOG_FILE}"
   },
   "telemetry": {
     "enabled": false
+  },
+  "talk": {
+    "agentId": "main"
   }
 }

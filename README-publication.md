@@ -38,9 +38,11 @@ python3 scripts/export_public.py /absolute/path/to/new-public-starter
 ```
 
 Choose a destination that does not exist. The exporter copies current tracked
-files, scans them, and creates a portable `config/openclaw.json` from the
-starting policy. That configuration has no selected model, account include,
-owner identifiers, or enabled messaging channels. Add intended new source files
+files, scans them, and creates a portable `config/openclaw.json` from your
+tracked configuration: the agent roster, tool policy, and delegation limits are
+kept; the auth include, channels, bindings, owner identifiers, selected models,
+channel plugins, and runtime metadata are removed. Agent paths must use the
+launcher variables, or the export stops. Add intended new source files
 to Git explicitly before exporting; untracked files are excluded.
 
 The export contains no `.git`, `.env`, private state, or account files. Initialize

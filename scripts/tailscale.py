@@ -163,7 +163,7 @@ def main():
                 if response.status != 200:
                     raise ValueError("Start both native servers as described in README-native.md first.")
         try:
-            urllib.request.urlopen("http://127.0.0.1:9119/api/workshop-auth-check", timeout=5).close()
+            urllib.request.urlopen("http://127.0.0.1:9119/api/auth-check", timeout=5).close()
         except urllib.error.HTTPError as error:
             if error.code != 401:
                 raise ValueError("Hermes did not require login; restart its project-local dashboard before sharing it.")

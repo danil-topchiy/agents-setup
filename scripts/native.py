@@ -8,7 +8,9 @@ import sys
 
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "docker"))
-from init import env_values, prepare_env, prepare_hermes
+from init import env_values, portable_config, prepare_env, prepare_hermes
+
+starter_config = portable_config
 
 
 def base_environment():
@@ -20,22 +22,6 @@ def base_environment():
                "SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"}
     return {key: value for key, value in os.environ.items()
             if key in allowed or key.startswith("LC_")}
-
-
-def starter_config(project=PROJECT):
-    """Build a portable native config without provider accounts or enabled channels."""
-    data = json.loads((Path(project) / "config/openclaw-policy.patch.json").read_text())
-    workspace = "${OPENCLAW_WORKSPACE_DIR}"
-    data["gateway"].update({"port": 18789, "controlUi": {
-        "allowedOrigins": ["http://127.0.0.1:18789", "http://localhost:18789"]}})
-    data["gateway"]["auth"]["token"] = {
-        "source": "env", "provider": "default", "id": "OPENCLAW_GATEWAY_TOKEN"}
-    data["agents"]["defaults"]["workspace"] = workspace
-    data["agents"]["entries"] = {"main": {"workspace": workspace,
-                                         "agentDir": "${OPENCLAW_AGENT_DIR}"}}
-    data["logging"] = {"file": "${OPENCLAW_LOG_FILE}"}
-    data["telemetry"] = {"enabled": False}
-    return data
 
 
 def openclaw_paths(project, values):
@@ -76,7 +62,7 @@ def initialize(project=PROJECT):
     else:
         print("Kept existing native OpenClaw configuration.")
     state = private / "hermes"
-    if (state / ".workshop-initialized").is_file():
+    if any((state / name).is_file() for name in (".starter-initialized", ".workshop-initialized")):
         print("Kept existing native Hermes configuration and memory.")
     elif (state / "config.yaml").exists():
         raise ValueError("Native Hermes config already exists; preserve it and review locally.")
@@ -108,7 +94,7 @@ def runtime_env(service, project=PROJECT):
         # its lower-trust workspace-dotenv filtering. Hermes secrets stay scoped.
         env.update({key: value for key, value in values.items()
                     if not key.startswith("HERMES_") and key not in
-                    {"COMPOSE_PROJECT_NAME", "DEMO_PROJECT", "WORKSHOP_UID", "WORKSHOP_GID"}})
+                    {"COMPOSE_PROJECT_NAME", "DEMO_PROJECT", "HOST_UID", "HOST_GID"}})
         env.update(env_values(project / ".local/openclaw.env"))
         # Selectors come from this checkout's .env, never an inherited host profile.
         env.update({key: str(value) for key, value in paths.items()})

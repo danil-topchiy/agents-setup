@@ -6,9 +6,15 @@
       "mode": "token",
       "allowTailscale": false
     },
-    "tailscale": { "mode": "off" },
-    "terminal": { "enabled": false },
-    "cliAgents": { "enabled": false }
+    "tailscale": {
+      "mode": "off"
+    },
+    "terminal": {
+      "enabled": false
+    },
+    "cliAgents": {
+      "enabled": false
+    }
   },
   "agents": {
     "defaults": {
@@ -26,33 +32,37 @@
     "profile": "minimal",
     "alsoAllow": [
       "read",
-      "write"
+      "write",
+      "exec",
+      "skill_workshop",
+      "group:memory",
+      "sessions_spawn",
+      "sessions_yield",
+      "subagents"
     ],
     "deny": [
       "edit",
       "apply_patch",
-      "group:runtime",
       "group:automation",
       "group:web",
       "group:ui",
       "group:messaging",
       "group:nodes",
       "group:plugins",
-      "sessions_spawn",
       "sessions_send"
     ],
     "fs": {
       "workspaceOnly": true
     },
     "exec": {
-      "security": "deny",
-      "ask": "always"
+      "security": "allowlist",
+      "ask": "on-miss"
     },
     "elevated": {
       "enabled": false
     },
     "sessions": {
-      "visibility": "self"
+      "visibility": "tree"
     },
     "agentToAgent": {
       "enabled": false
@@ -62,15 +72,44 @@
     },
     "toolSearch": false
   },
-  "browser": { "enabled": false },
-  "cron": { "enabled": false },
-  "hooks": { "enabled": false },
-  "discovery": { "mdns": { "mode": "off" } },
+  "browser": {
+    "enabled": false
+  },
+  "cron": {
+    "enabled": false
+  },
+  "hooks": {
+    "enabled": false
+  },
+  "discovery": {
+    "mdns": {
+      "mode": "off"
+    }
+  },
   "plugins": {
     "entries": {
-      "anthropic": { "config": { "sessionCatalog": { "enabled": false } } },
-      "codex": { "config": { "sessionCatalog": { "enabled": false } } },
-      "memory-core": { "config": { "dreaming": { "enabled": false } } }
+      "anthropic": {
+        "config": {
+          "sessionCatalog": {
+            "enabled": false
+          }
+        }
+      },
+      "codex": {
+        "config": {
+          "sessionCatalog": {
+            "enabled": false
+          }
+        }
+      },
+      "memory-core": {
+        "config": {
+          "dreaming": {
+            "enabled": false
+          }
+        },
+        "enabled": true
+      }
     }
   }
 }

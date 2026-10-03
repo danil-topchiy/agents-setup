@@ -30,6 +30,14 @@ For Telegram or AgentMail, also read `README-integrations.md`.
   with distinct service names. Preserve other host services and record the
   actual start/stop/status commands privately in `.local/services/README.md`.
   Hermes messaging needs its own gateway.
+- The tracked config registers Chief of Staff (`main`) and eight specialist
+  agents. Keep agent paths as `${OPENCLAW_WORKSPACE_DIR}/agents/<id>` and
+  `${OPENCLAW_STATE_DIR}/agents/<id>/agent`; never commit absolute paths.
+  Delegation works without any chat channel.
+- Discord is optional. Use `scripts/configure_discord_collaboration.py` to stage
+  and validate one bot per agent from private IDs and tokens, review the ignored
+  candidate, then `--apply` with the Gateway stopped and restart it. Only agents
+  with a token are put on Discord. Keep tokens and Discord IDs out of chat and Git.
 - Record observed versions, checks and remaining failures in `setup-notes.md`.
   Distinguish executed checks from instructions prepared for a future run.
 - Before publication, scan both tracked files and reachable Git history with

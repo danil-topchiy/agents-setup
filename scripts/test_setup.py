@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from native import PROJECT, initialize, runtime_env, starter_config
-from init import env_values, prepare_env, prepare_hermes
+from init import docker_config, env_values, prepare_env, prepare_hermes
 from tailscale import check_native_settings, gateway_patch
 
 
@@ -116,6 +116,54 @@ class SetupTests(unittest.TestCase):
         self.assertNotIn("commands", data)
         self.assertFalse(data["gateway"]["auth"]["allowTailscale"])
         self.assertTrue(runtime_env("openclaw", self.project)["OPENCLAW_GATEWAY_TOKEN"])
+
+    def test_starter_config_keeps_the_team_and_drops_instance_settings(self):
+        tracked = json.loads((PROJECT / "config/openclaw.json").read_text())
+        tracked["auth"] = {"$include": "./openclaw-auth.private.json"}
+        tracked["channels"] = {"discord": {"$include": "./openclaw-discord.private.json"}}
+        tracked["bindings"] = [{"agentId": "cto", "match": {"channel": "discord", "accountId": "cto"}}]
+        tracked["plugins"]["entries"]["discord"] = {"enabled": True}
+        tracked["agents"]["defaults"]["model"] = "openai/${OPENCLAW_PRIVATE_DEFAULT_MODEL}"
+        tracked["gateway"]["trustedProxies"] = ["127.0.0.1"]
+        config = self.project / "config/openclaw.json"
+        config.write_text(json.dumps(tracked))
+        data = starter_config(self.project)
+        self.assertEqual(set(data["agents"]["entries"]), set(tracked["agents"]["entries"]))
+        self.assertEqual(data["agents"]["entries"]["cto"]["workspace"], "${OPENCLAW_WORKSPACE_DIR}/agents/cto")
+        for key in ("auth", "channels", "bindings"):
+            self.assertNotIn(key, data)
+        self.assertNotIn("discord", data["plugins"]["entries"])
+        self.assertNotIn("model", data["agents"]["defaults"])
+        self.assertNotIn("trustedProxies", data["gateway"])
+        self.assertIn("sessions_spawn", data["tools"]["alsoAllow"])
+        self.assertEqual(data["gateway"]["auth"]["token"]["id"], "OPENCLAW_GATEWAY_TOKEN")
+        tracked["agents"]["entries"]["cto"]["workspace"] = "/home/someone/private/path"
+        config.write_text(json.dumps(tracked))
+        with self.assertRaises(ValueError):
+            starter_config(self.project)
+
+    def test_docker_config_registers_the_team_with_container_paths(self):
+        shutil.copy2(PROJECT / "config/openclaw.json", self.project / "config/openclaw.json")
+        tracked = json.loads((PROJECT / "config/openclaw.json").read_text())
+        data = docker_config(self.project, Path("/opt/chromium/chrome"))
+        self.assertEqual(set(data["agents"]["entries"]), set(tracked["agents"]["entries"]))
+        self.assertEqual(data["agents"]["entries"]["main"]["workspace"], "/project/openclaw/workspace")
+        self.assertEqual(data["agents"]["entries"]["cto"]["workspace"], "/project/openclaw/workspace/agents/cto")
+        self.assertNotIn("agentDir", data["agents"]["entries"]["cto"])
+        self.assertNotIn("${", json.dumps(data))
+        self.assertNotIn("logging", data)
+        self.assertEqual(data["gateway"]["bind"], "lan")
+        self.assertEqual(data["browser"]["executablePath"], "/opt/chromium/chrome")
+        self.assertIn("sessions_spawn", data["tools"]["alsoAllow"])
+        initialize(self.project)
+        env = runtime_env("openclaw", self.project)
+        binary = shutil.which("openclaw", path=env["PATH"])
+        if binary:
+            candidate = self.project / "docker-candidate.json"
+            candidate.write_text(json.dumps(data))
+            result = subprocess.run([binary, "config", "validate"], cwd=self.project, text=True,
+                                    capture_output=True, env=dict(env, OPENCLAW_CONFIG_PATH=str(candidate)))
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_native_environment_keeps_credentials_and_tool_overrides_scoped(self):
         initialize(self.project)

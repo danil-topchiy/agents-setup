@@ -1,9 +1,10 @@
 # Configuration, credentials and personal data
 
-Native OpenClaw selects `config/openclaw.json` as its active configuration.
-Common dashboard settings save here and appear in Git's diff. The public
-starter needs only the generated Gateway token and launcher-provided paths;
-it has no account, selected model, owner ID, or enabled channel. Complete your
+Native OpenClaw selects `config/openclaw.json` as its active configuration:
+the agent roster, tool policy, and delegation limits. Common dashboard settings
+save here and appear in Git's diff. The public starter needs only the generated
+Gateway token and launcher-provided paths; it has no account, selected model,
+owner ID, or enabled channel. Complete your
 own model login. Review personal values introduced by onboarding or UI saves
 before committing; use private environment references or an ignored include.
 
@@ -11,12 +12,15 @@ before committing; use private environment references or an ignored include.
 
 | File or directory | Purpose | In Git? |
 | --- | --- | --- |
-| `config/openclaw.json` | Active native settings with environment references | Yes |
+| `config/openclaw.json` | Active native settings: agent team, tool policy, environment references | Yes |
 | `config/openclaw-auth.private.json` | Optional private account-profile identifiers and metadata | No |
-| `config/openclaw-policy.patch.json` | Starting teaching policy; applied by either setup route | Yes |
+| `config/openclaw-discord.private.json` | Discord bot accounts, allowlists and token references written by the Discord helper | No |
+| `config/openclaw-policy.patch.json` | Starting tool policy; reapplied after onboarding on either route | Yes |
+| `config/discord-team-instructions.md` | Template for the Discord section the helper installs in each agent's `AGENTS.md` | Yes |
+| `openclaw/workspace/agents/<id>/` | Specialist agent workspaces; `openclaw/workspace/` is Chief of Staff | Yes |
 | `.env.example` | Documented variables with blank credentials | Yes |
 | `.env` | Private credentials, email/model/owner values, and native config/state paths | No |
-| `.local/openclaw.env` | Additional private OpenClaw integration variables | No |
+| `.local/openclaw.env` | Additional private OpenClaw integration variables, including Discord IDs and bot tokens | No |
 | `.local/native/` | Default native account/session state and Hermes config | No |
 | `.local/logs/` | Native Gateway file log and service output | No |
 | OpenClaw config backups and rejected writes | Generated next to the active JSON | No |
@@ -51,8 +55,9 @@ authentication settings contain:
 ```
 
 For an optional Telegram connection, `botToken` can use the same shape with
-`id: "TELEGRAM_BOT_TOKEN"`. Store that value privately in root `.env` or
-`.local/openclaw.env`. Subscription/provider account
+`id: "TELEGRAM_BOT_TOKEN"`. Discord bot tokens use `DISCORD_BOT_TOKEN` and
+`DISCORD_<ROLE>_BOT_TOKEN` references inside the ignored Discord include.
+Store the values privately in root `.env` or `.local/openclaw.env`. Subscription/provider account
 records remain in the selected private state directory. When adding a new
 credential in the dashboard, choose an environment/secret reference and put
 the actual value in a private credential file. Review the diff before committing.
@@ -151,12 +156,16 @@ or host account state into a fresh Docker volume.
 
 ```sh
 python3 scripts/check_config_privacy.py
-git diff -- config/openclaw.json README.md README-native.md README-configuration.md
-git check-ignore .env .local/openclaw.env config/openclaw-auth.private.json
-git add config/openclaw.json .env.example .gitignore README.md README-native.md README-configuration.md
-git add scripts/check_config_privacy.py scripts/test_config_privacy.py
+git diff -- config/openclaw.json openclaw/workspace
+git check-ignore .env .local/openclaw.env config/openclaw-auth.private.json config/openclaw-discord.private.json
+git add config/openclaw.json openclaw/workspace .env.example .gitignore
 git diff --cached -- config/openclaw.json .env.example
 ```
+
+After the Discord helper's `--apply`, the tracked config gains the Discord
+include, the enabled plugin and one binding per bot, and each configured
+agent's `AGENTS.md` gains its Discord section; both are safe to commit. The
+IDs and tokens stay in the ignored include and private environment files.
 
 Commit only reviewed settings and the example without personal values.
 `.env`, private auth metadata, runtime state and generated backups remain ignored.

@@ -93,3 +93,34 @@ and authentication checks alone do not prove a particular provider account or
 messaging integration is configured. See [native setup](README-native.md),
 [Docker setup](README-docker.md), [Hermes](README-hermes.md), and
 [publication checks](README-publication.md).
+
+## Agent team and Discord helper
+
+Offline checks for the nine-agent configuration, the Discord helper, and the
+generic documentation. No live model, Telegram, or Discord exchange was run.
+
+- All 35 setup, privacy, publication, Tailscale, and Discord-helper tests
+  passed. New tests cover the portable config derived from the tracked roster,
+  the Docker config with container paths (validated against the OpenClaw
+  schema), full and partial Discord rosters, rejection of missing or duplicate
+  credentials and of foreign Discord settings, instruction-section replacement
+  that preserves other sections, and the bot identity check.
+- A disposable copy ran `scripts/native.py init`, `config validate`, and
+  `agents list`: nine agents with workspaces under the checkout and agent
+  directories under private state.
+- The Discord helper's dry run with synthetic IDs and tokens for Chief of
+  Staff, CTO, and SWE validated the candidate and staged three instruction
+  files; the six agents without tokens were reported as reachable through
+  delegation only. Without the Discord plugin the helper stopped and printed
+  the install command. A simulated `--apply` (credential check bypassed, no
+  network) wrote the private include, the include/plugin/bindings in the
+  tracked config, and the Discord section in exactly the three configured
+  `AGENTS.md` files; `config validate`, `agents list` with one routing rule per
+  configured agent, and the config privacy check passed afterwards.
+- The Gateway started on an unused loopback port with that configuration:
+  health 200, Discord accounts bound to their agents, the synthetic tokens
+  rejected by Discord with 401 and retried, and `meeting-brief` listed as an
+  eligible workspace skill for `main` with the default empty skill filter.
+- The exporter produced a starter that kept the nine agents and had no
+  channels or auth include. Publication scans of tracked files and history,
+  the config privacy check, local link checks, and `git diff --check` passed.
