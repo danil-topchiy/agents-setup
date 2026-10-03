@@ -31,6 +31,9 @@ def prepare_env(kit=None):
     lines = [key + "='" + value.replace("'", "\\'") + "'" for key, value in values.items()]
     if path.exists():
         current = env_values(path)
+        # Accept the published starter's names without rewriting private settings.
+        current["HOST_UID"] = current.get("HOST_UID") or current.get("WORKSHOP_UID", "")
+        current["HOST_GID"] = current.get("HOST_GID") or current.get("WORKSHOP_GID", "")
         # Older checkouts have no explicit native selectors; keep their files intact.
         optional = {"OPENCLAW_CONFIG_PATH", "OPENCLAW_STATE_DIR", "OPENCLAW_HOME"}
         missing = [key for key in values if key not in optional and not current.get(key)]

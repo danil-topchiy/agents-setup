@@ -9,6 +9,25 @@ for installation, private state, model login, and background operation. Use the
 same route for every command. The dashboard runs on localhost port `9119`;
 [Tailscale Serve](README-tailscale.md) adds private HTTPS on port `8444`.
 
+## Use Hermes without OpenClaw
+
+Hermes does not call OpenClaw. Install Hermes and its prerequisites from the
+native guide, skipping the OpenClaw installation, then run from this repository:
+
+```sh
+python3 scripts/native.py init
+python3 scripts/native.py hermes model
+python3 scripts/native.py hermes chat
+```
+
+Initialization prepares local files for both assistants but starts neither and
+does not require the OpenClaw executable. Hermes chat uses its own account and
+memory. Its optional Telegram connection needs the separate Hermes messaging
+gateway described below; it does not use the OpenClaw Discord team.
+
+The combined Tailscale helper expects both runtimes. This CLI-only route does
+not need it; configure a standalone Hermes dashboard separately if wanted.
+
 ## Personalize it
 
 Before first initialization, replace the placeholders in:

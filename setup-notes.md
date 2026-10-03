@@ -130,3 +130,60 @@ generic documentation. No live model, Telegram, or Discord exchange was run.
   applied, `config validate`, `agents list --bindings` (one Discord account per
   agent) and the privacy check passed. No Gateway was started from that clone,
   so live bot replies under this configuration remain an operator check.
+
+## Publication review, 2 October 2026
+
+- All 37 offline tests passed, including two new upgrade regression tests.
+  An environment from the published starter uses `WORKSHOP_UID` /
+  `WORKSHOP_GID`; initialization now accepts these without rewriting the file.
+  Compose retains those IDs for both containers. Tests also cover current names,
+  their precedence when both are present, and empty current values falling back
+  to the original names. Existing configuration, memory, and credentials survive
+  repeated native initialization.
+- Configuration privacy, publication scans of tracked files and reachable
+  history, and whitespace checks passed.
+- A disposable native copy of the public configuration registered all nine
+  agents and passed schema validation. Its Gateway health and dashboard returned
+  200; anonymous tool access returned 401 and an authenticated nonexistent-tool
+  probe returned 404. `meeting-brief` was eligible for Chief of Staff. The test
+  process and disposable state were removed. No provider account or messenger
+  credentials were installed in that copy.
+- Hermes initialization and its native launcher succeeded with OpenClaw absent
+  from the test PATH. Hermes reported version `0.21.5`; no provider auth file was
+  created. This verifies independent startup, not a real Hermes model reply.
+- A read-only probe of a separate, already configured private instance found
+  all nine Discord accounts and its Telegram account running, connected, and
+  passing their probes. This checks existing credentials and connectivity; it
+  does not establish a message round trip with the public configuration.
+- Earlier private-instance evidence records a real provider `Ready` reply,
+  Discord DMs, and private CTO-to-SWE and Chief-of-Staff-to-Sales delegation.
+  Those results belong to that configured instance, not to a fresh public clone.
+
+Remaining end-to-end checks for this public configuration: a real model reply
+and Discord handoff after setup, Telegram message/reply delivery, AgentMail,
+Hermes provider replies, and access from a second Tailscale device. Fresh Docker
+startup was not repeated during this review because the Docker daemon was
+stopped; Compose rendering and config validation passed without the daemon.
+
+## Publication privacy audit, 3 October 2026
+
+- Reviewed all 88 tracked files, including pending changes, and all three
+  reachable commits. The published branch is included in that history.
+- Configuration and publication privacy checks passed. An additional local
+  comparison against private credentials and account identifiers found no
+  matches; private values were not printed or saved in the public checkout.
+- Reviewed context templates, agent instructions, examples, and documentation
+  for personal and private project details. They contain generic roles and
+  placeholders. The numeric Discord identifiers in tests are synthetic.
+- Commit author and committer metadata contain no private contact details.
+  No credentials, personal contact details, or private project content were
+  found in the reviewed files or history.
+
+## Launch without Discord, 3 October 2026
+
+A fresh disposable copy with no Discord environment variables and no configured
+channels passed native initialization and config validation, registered all nine
+agents, and started its Gateway. Health and dashboard requests returned 200;
+anonymous tool access returned 401. Compose configuration also rendered without
+Discord credentials; containers were not started. The temporary process and
+state were removed. No model provider was configured or model reply tested.

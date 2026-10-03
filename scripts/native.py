@@ -94,7 +94,8 @@ def runtime_env(service, project=PROJECT):
         # its lower-trust workspace-dotenv filtering. Hermes secrets stay scoped.
         env.update({key: value for key, value in values.items()
                     if not key.startswith("HERMES_") and key not in
-                    {"COMPOSE_PROJECT_NAME", "DEMO_PROJECT", "HOST_UID", "HOST_GID"}})
+                    {"COMPOSE_PROJECT_NAME", "DEMO_PROJECT", "HOST_UID", "HOST_GID",
+                     "WORKSHOP_UID", "WORKSHOP_GID"}})
         env.update(env_values(project / ".local/openclaw.env"))
         # Selectors come from this checkout's .env, never an inherited host profile.
         env.update({key: str(value) for key, value in paths.items()})

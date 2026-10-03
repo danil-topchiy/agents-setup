@@ -126,7 +126,7 @@ task ID and turn N/4 in each reply. Keep replies under 120 words. Do not use
 tools, write files, or claim that code was executed.
 ```
 
-Expect four messages from four different bot authors, CTO -> SWE -> QA -> CTO,
+Expect four messages from three bot authors, CTO -> SWE -> QA -> CTO,
 each handoff a clickable mention, and a final CLOSED reply with no mention. The
 expected values are 0, 10, and 4. Use a new task number for each run. One bot
 narrating a fictional dialogue is not a successful handoff; check the authors.
@@ -143,9 +143,12 @@ three bot replies. This is a draft only; do not contact anyone.
 Direct messages: right-click a bot in the member list and choose **Message**,
 then write without a mention. Each bot keeps its DM separate from server
 channels, and only your user ID is allowed. To consult a teammate privately,
-DM CTO: `Ask SWE for a short status of the clamp task and summarize its answer
-here.` CTO spawns a real SWE task, waits for the result, and reports it in the
-DM; nothing is posted to server channels.
+DM CTO: `Ask SWE to write a JavaScript clamp(value, min, max) function and give
+the expected results for (-2, 0, 10), (13, 0, 10), and (4, 0, 10). Use delegation
+and return the answer here; do not execute the code or post to a server channel.` CTO spawns
+a real SWE task, waits for the result, and reports it in the DM. Include the
+inputs in the DM: a new delegated task does not inherit the earlier server
+conversation or automatically know what happened there.
 
 ## How it works
 

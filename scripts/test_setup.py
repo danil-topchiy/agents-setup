@@ -44,6 +44,49 @@ class SetupTests(unittest.TestCase):
             prepare_env(self.project)
         self.assertEqual(path.read_text(), "SOME_OTHER_APP=preserve-me\n")
 
+    def test_published_uid_names_survive_native_initialization(self):
+        initialize(self.project)
+        path = self.project / ".env"
+        path.write_text(path.read_text().replace("HOST_UID=", "WORKSHOP_UID=")
+                        .replace("HOST_GID=", "WORKSHOP_GID="))
+        preserved = [path, self.project / "config/openclaw.json",
+                     self.project / ".local/native/hermes/config.yaml",
+                     self.project / ".local/native/hermes/memories/MEMORY.md"]
+        before = {p: p.read_bytes() for p in preserved}
+        initialize(self.project)
+        self.assertEqual(before, {p: p.read_bytes() for p in preserved})
+        env = runtime_env("openclaw", self.project)
+        self.assertTrue(env["OPENCLAW_GATEWAY_TOKEN"])
+        for key in ("HOST_UID", "HOST_GID", "WORKSHOP_UID", "WORKSHOP_GID"):
+            self.assertNotIn(key, env)
+
+    @unittest.skipUnless(shutil.which("docker"), "Docker CLI is not installed")
+    def test_compose_preserves_published_and_current_uid_values(self):
+        prepare_env(self.project)
+        path = self.project / ".env"
+        base = "\n".join(line for line in path.read_text().splitlines()
+                         if not line.startswith(("HOST_UID=", "HOST_GID="))) + "\n"
+        legacy = "WORKSHOP_UID='1234'\nWORKSHOP_GID='2345'\n"
+        current = "HOST_UID='3456'\nHOST_GID='4567'\n"
+        cases = [(legacy, "1234", "2345"), (current, "3456", "4567"),
+                 (legacy + current, "3456", "4567"),
+                 (legacy + "HOST_UID=''\nHOST_GID=''\n", "1234", "2345")]
+        for settings, uid, gid in cases:
+            with self.subTest(settings=settings):
+                path.write_text(base + settings)
+                before = path.read_bytes()
+                prepare_env(self.project)
+                self.assertEqual(path.read_bytes(), before)
+                result = subprocess.run(["docker", "compose", "config", "--format", "json"],
+                                        cwd=self.project, text=True, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                services = json.loads(result.stdout)["services"]
+                self.assertEqual(services["openclaw"]["user"], f"{uid}:{gid}")
+                self.assertEqual(services["openclaw"]["environment"]["HOST_UID"], uid)
+                self.assertEqual(services["openclaw"]["environment"]["HOST_GID"], gid)
+                self.assertEqual(services["hermes"]["environment"]["HERMES_UID"], uid)
+                self.assertEqual(services["hermes"]["environment"]["HERMES_GID"], gid)
+
     @unittest.skipUnless(shutil.which("docker"), "Docker CLI is not installed")
     def test_compose_keeps_special_characters_in_the_project_mount(self):
         prepare_env(self.project)

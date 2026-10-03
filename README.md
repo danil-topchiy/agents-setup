@@ -18,6 +18,21 @@ returned result. You can also address any specialist directly. **Hermes** runs
 as a personal assistant for planning, notes, and drafting messages. Both use
 editable templates and your own provider account.
 
+OpenClaw and Hermes are independent runtimes; neither is the other's model
+provider. Each connects to the model provider you select during its own login.
+
+| Setup | What works |
+| --- | --- |
+| OpenClaw, without a messenger | The whole team through its dashboard or CLI, including delegation |
+| OpenClaw with Discord or Telegram | The same team through chat; Discord can give each agent its own bot |
+| Without OpenClaw | Hermes still works with its own model login and optional Telegram gateway; the OpenClaw team and its Discord bots do not run |
+| Without Docker | Use the native route; the agents and capabilities are the same |
+
+The bundled setup and Tailscale helper configure both dashboards. For a
+Hermes-only setup, install Hermes and use its launcher commands; do not run
+the combined Tailscale helper, which expects both runtimes. See
+[Hermes without OpenClaw](README-hermes.md#use-hermes-without-openclaw).
+
 Starting permissions: OpenClaw agents read and write inside their own
 workspace, run shell commands from an approval allowlist (unlisted commands ask
 first), use memory tools and the skill workshop, and delegate to each other
@@ -27,6 +42,10 @@ task-planning, and clarification tools. These rules are not an operating-system
 sandbox. See the [Hermes guide](README-hermes.md) for its permissions.
 
 ## The team
+
+For a first demo, start with Chief of Staff, CTO, SWE, and QA. The other five
+specialists are available when their roles are useful; you do not need to set
+up Discord bots for all nine agents.
 
 | Agent | ID | Focus |
 | --- | --- | --- |

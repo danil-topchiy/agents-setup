@@ -40,6 +40,11 @@ OpenClaw gets the tracked agent team and tool policy with container paths,
 Hermes gets its starter context. Skip those two initialization commands when state
 already exists. `up -d` can be repeated.
 
+When upgrading from the original starter, keep your existing `.env` and volumes.
+Its `WORKSHOP_UID` / `WORKSHOP_GID` values remain supported, so the container
+user and existing file ownership stay the same. New setups use `HOST_UID` /
+`HOST_GID`; non-empty new values take precedence if both names are present.
+
 Wait for **both** services to become healthy. Complete provider login privately:
 
 ```sh
