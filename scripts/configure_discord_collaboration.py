@@ -313,7 +313,7 @@ def main():
     report = checked.stdout + checked.stderr
     if "plugin not installed: discord" in report:
         raise ValueError("The Discord channel plugin is not installed. Run "
-                         "python3 scripts/native.py openclaw plugins install @openclaw/discord@2026.9.6 and rerun.")
+                         "python3 scripts/native.py openclaw plugins install @openclaw/discord@2026.9.8 and rerun.")
     for line in report.splitlines():
         if line.lstrip().startswith("!"):
             print("Validation warning:", line.strip())

@@ -25,3 +25,12 @@ config/*.private.json.*
 **/memory/
 __pycache__/
 *.pyc
+node_modules/
+# Live specialist memory and per-device Obsidian state stay local.
+openclaw/workspace/agents/*/MEMORY.md
+**/.obsidian/workspace*.json
+**/.obsidian/cache/
+**/.obsidian/plugins/
+**/.trash/
+# Paperclip agent keys never belong in a workspace commit.
+openclaw/workspace/**/paperclip-claimed-api-key.json

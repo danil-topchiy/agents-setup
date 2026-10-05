@@ -110,7 +110,11 @@ and the host awake. `docker compose stop` or `down` intentionally stops them;
 run `up -d` to resume. Serve already uses `--bg`; check its routes after a reboot.
 
 Optional [Telegram and AgentMail setup](README-integrations.md) uses these
-same containers and private volumes.
+same containers and private volumes. The container config indexes the shared
+knowledge vault from the mounted checkout with keyword search. The initializer
+removes host-only MCP connections (GBrain and anything on host loopback) from
+the container config: see the [GBrain](README-gbrain.md#linux-and-docker) and
+[Paperclip](README-paperclip.md#docker-route) notes for the Docker route.
 
 ## Start, inspect and stop
 
@@ -130,7 +134,7 @@ Integration keys belong in ignored `.local/openclaw.env`. After editing it,
 run `docker compose up -d --force-recreate openclaw`, then rerun the Tailscale
 helper. Do not source `.env` as a shell script.
 
-Images are pinned to official [OpenClaw](https://github.com/openclaw/openclaw/blob/v2026.9.6/docs/install/docker.md)
+Images are pinned to official [OpenClaw](https://github.com/openclaw/openclaw/blob/v2026.9.8/docs/install/docker.md)
 and [Hermes](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/website/docs/user-guide/docker.md)
 releases. The Hermes ARM setting preserves a workaround verified for
 the pinned image on ARM64 hosts.

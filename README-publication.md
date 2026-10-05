@@ -28,6 +28,14 @@ Deleting a file or adding it to `.gitignore` does not remove it from old commits
 Use a public author identity, such as a GitHub noreply address, for commits you
 intend to publish. Never push an existing history that contains private data.
 
+Private state added by the optional components stays ignored: `.local/gbrain/`
+(tokens, derived index), `paperclip/.local/` (database, agent keys, callbacks,
+raw exports), and `paperclip/node_modules/`. A Paperclip export can contain the
+Gateway token and device keys; share only the redacted copy that
+`paperclip/team.py export` writes, after reading it. The knowledge vault is
+tracked content: notes you add there are published with the repository unless
+you keep them in a private branch or ignore them.
+
 ## Export a clean starter
 
 A configured checkout can have account-specific settings even when its secrets

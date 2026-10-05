@@ -56,8 +56,10 @@ def prepare_env(kit=None):
     print(f"Dashboard settings ready in {path}. Existing credentials were preserved.")
 
 
-INSTANCE_KEYS = ("auth", "channels", "bindings", "commands", "wizard", "meta", "broadcast")
+INSTANCE_KEYS = ("auth", "channels", "bindings", "commands", "wizard", "meta", "broadcast",
+                 "approvals", "cron")
 WORKSPACE = "${OPENCLAW_WORKSPACE_DIR}"
+LOOPBACK = ("127.0.0.1", "localhost", "::1", "[::1]")
 
 
 def portable_config(project):
@@ -97,12 +99,44 @@ def portable_config(project):
     data["agents"].setdefault("defaults", {})["workspace"] = WORKSPACE
     data["logging"] = {"file": "${OPENCLAW_LOG_FILE}"}
     data["telemetry"] = {"enabled": False}
+    # Approval destinations and scheduled jobs belong to one configured instance.
+    data["cron"] = {"enabled": False}
+    return data
+
+
+def host_only_mcp_servers(data):
+    """MCP servers a container cannot reach: host loopback URLs, host executables, and the GBrain overlay."""
+    names = []
+    for name, server in data.get("mcp", {}).get("servers", {}).items():
+        url = str(server.get("url", ""))
+        host = url.split("//", 1)[-1].split("/", 1)[0].rsplit(":", 1)[0] if url else ""
+        if name == "gbrain" or name.startswith("gbrain_history_") or "command" in server or host in LOOPBACK:
+            names.append(name)
+    return names
+
+
+def without_host_only_mcp(data):
+    """Drop host-only MCP servers and the tool-policy entries that reference them."""
+    names = host_only_mcp_servers(data)
+    for name in names:
+        data["mcp"]["servers"].pop(name, None)
+    if "mcp" in data and not data["mcp"].get("servers"):
+        data.pop("mcp", None)
+    # GBrain entries are always host-only, even for agents whose server was never configured.
+    prefixes = tuple({*(f"{name}__" for name in names), "gbrain__", "gbrain_history_"})
+    policies = [data.get("tools", {})]
+    policies += [entry.get("tools", {}) for entry in data.get("agents", {}).get("entries", {}).values()]
+    for policy in policies:
+        for key in ("allow", "alsoAllow", "deny"):
+            if key in policy:
+                policy[key] = [item for item in policy[key] if not item.startswith(prefixes)]
     return data
 
 
 def docker_config(project, chromium):
     """The portable config with container paths; agent state stays in the private volume."""
-    data = json.loads(json.dumps(portable_config(project)).replace(WORKSPACE, "/project/openclaw/workspace"))
+    data = without_host_only_mcp(portable_config(project))
+    data = json.loads(json.dumps(data).replace(WORKSPACE, "/project/openclaw/workspace"))
     for entry in data["agents"]["entries"].values():
         entry.pop("agentDir", None)
     data.pop("logging", None)

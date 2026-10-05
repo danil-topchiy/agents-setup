@@ -40,7 +40,8 @@ tailscale serve status --json
 
 The host must be running and connected. Reuse an existing connection and
 preserve other Serve routes. Tailnet policy must permit your client devices
-to reach this host on TCP **8443** and **8444**.
+to reach this host on TCP **8443** and **8444**, plus **8445** if you serve
+the optional Paperclip console.
 
 ## Configure both dashboards
 
@@ -62,6 +63,10 @@ sets Hermes's public URL and trusted proxies, and prints:
 
 - OpenClaw: `https://YOUR-HOST.YOUR-TAILNET.ts.net:8443`
 - Hermes: `https://YOUR-HOST.YOUR-TAILNET.ts.net:8444`
+- Paperclip, with `--with-paperclip`: `https://YOUR-HOST.YOUR-TAILNET.ts.net:8445`
+
+A native checkout that runs its Gateway on another port (`OPENCLAW_GATEWAY_PORT`
+in `.env`) is proxied from that port; the HTTPS ports stay the same.
 
 It uses [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve).
 If HTTPS is not enabled, follow the CLI's consent link and rerun the helper.
@@ -107,6 +112,27 @@ Replace `REQUEST_ID` with the observed ID. Credentials are in ignored `.env`;
 inspect them privately. Test login and a short model reply from a second
 connected device. Keep the host awake and connected.
 
+## Paperclip console
+
+[Paperclip](README-paperclip.md) starts in `local_trusted` mode: every request
+that reaches its loopback port, including one forwarded by Serve, acts as the
+board. The helper therefore refuses to publish it until the instance requires
+login and knows the Tailscale hostname:
+
+```sh
+python3 paperclip/instance.py secure --allow-host YOUR-HOST.YOUR-TAILNET.ts.net
+python3 paperclip/instance.py restart
+python3 paperclip/run.py auth bootstrap-ceo --force --base-url https://YOUR-HOST.YOUR-TAILNET.ts.net:8445
+python3 scripts/tailscale.py --mode native --with-paperclip
+```
+
+`secure` switches the instance to `authenticated` mode on loopback and records
+the allowed hostname; `bootstrap-ceo --force` prints a one-time link for
+creating the first administrator account (the quickstart's local admin is
+replaced); open it from a tailnet device. Paperclip uses its
+own accounts, not the OpenClaw token. Agents keep calling Paperclip on loopback
+with their own keys. Native route only; Docker is covered in the Paperclip guide.
+
 ## Remove this setup's routes
 
 After stopping the runtimes, remove only these routes:
@@ -114,7 +140,9 @@ After stopping the runtimes, remove only these routes:
 ```sh
 tailscale serve --https=8443 off
 tailscale serve --https=8444 off
+tailscale serve --https=8445 off
 ```
 
 Avoid `tailscale serve reset`: it removes unrelated services. Rerun the helper
-after starting the runtimes again to restore their two routes.
+after starting the runtimes again to restore the routes. Skip the third command
+if Paperclip was never served.

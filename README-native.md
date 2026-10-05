@@ -9,9 +9,10 @@ data. Account-profile metadata stays in the ignored private auth include.
 The Gateway file log and service output stay in ignored `.local/logs/`.
 See [configuration and version control](README-configuration.md).
 Their project files stay in `openclaw/workspace/` and `hermes/project/`.
-Hermes starts with memory, planning, and clarification tools. Enabling native
-file or terminal tools gives them this OS account's permissions; cwd is not a
-sandbox. See [Hermes permissions](README-hermes.md#starting-permissions).
+Hermes includes file tools, shell commands, Python execution, skills,
+conversation recall, memory, planning, and clarification. Its native tools use
+this OS account's permissions; cwd is not a sandbox.
+See [Hermes permissions](README-hermes.md#starting-permissions).
 
 ## Install only what is missing
 
@@ -34,7 +35,7 @@ its normal installer. Check OpenClaw before running the install command:
 node --version
 openclaw --version
 # Only if OpenClaw is missing in the selected Node installation:
-npm install -g openclaw@2026.9.6
+npm install -g openclaw@2026.9.8
 ```
 
 Check `hermes --version`. If missing, download and run its tagged installer:
@@ -51,7 +52,7 @@ hermes --version
 ```
 
 Review the downloaded installer before execution. Skip installation if
-compatible applications are already present. See [OpenClaw installation](https://github.com/openclaw/openclaw/blob/v2026.9.6/docs/install/index.md)
+compatible applications are already present. See [OpenClaw installation](https://github.com/openclaw/openclaw/blob/v2026.9.8/docs/install/index.md)
 and the [Hermes installer](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/scripts/install.sh).
 
 ## Create state and sign in

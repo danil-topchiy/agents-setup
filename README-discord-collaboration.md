@@ -23,7 +23,7 @@ channel bound to Chief of Staff; see [chat channels](README.md#chat-channels).
   Discord channel plugin installed:
 
 ```sh
-python3 scripts/native.py openclaw plugins install @openclaw/discord@2026.9.6
+python3 scripts/native.py openclaw plugins install @openclaw/discord@2026.9.8
 python3 scripts/native.py openclaw plugins list
 ```
 

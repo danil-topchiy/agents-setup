@@ -33,7 +33,7 @@ class DiscordCollaborationTests(unittest.TestCase):
         scratch = tempfile.TemporaryDirectory()
         self.addCleanup(scratch.cleanup)
         self.project = Path(scratch.name).resolve()
-        self.config = json.loads((helper.native.PROJECT / "config/openclaw.json").read_text())
+        self.config = helper.native.starter_config(helper.native.PROJECT)
         self.template = (helper.native.PROJECT / "config/discord-team-instructions.md").read_text()
         for role in helper.ROLES:
             workspace = self.project / "openclaw/workspace" / ("" if role == "main" else f"agents/{role}")

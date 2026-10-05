@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from native import PROJECT, initialize, runtime_env, starter_config
-from init import docker_config, env_values, prepare_env, prepare_hermes
+from native import PROJECT, gateway_port, initialize, runtime_env, service_label, starter_config
+from init import docker_config, env_values, host_only_mcp_servers, prepare_env, prepare_hermes, without_host_only_mcp
 from tailscale import check_native_settings, gateway_patch
 
 
@@ -163,6 +163,8 @@ class SetupTests(unittest.TestCase):
     def test_starter_config_keeps_the_team_and_drops_instance_settings(self):
         tracked = json.loads((PROJECT / "config/openclaw.json").read_text())
         tracked["auth"] = {"$include": "./openclaw-auth.private.json"}
+        tracked["approvals"] = {"$include": "./openclaw-maintainer.private.json"}
+        tracked["cron"] = {"enabled": True}
         tracked["channels"] = {"discord": {"$include": "./openclaw-discord.private.json"}}
         tracked["bindings"] = [{"agentId": "cto", "match": {"channel": "discord", "accountId": "cto"}}]
         tracked["plugins"]["entries"]["discord"] = {"enabled": True}
@@ -173,8 +175,9 @@ class SetupTests(unittest.TestCase):
         data = starter_config(self.project)
         self.assertEqual(set(data["agents"]["entries"]), set(tracked["agents"]["entries"]))
         self.assertEqual(data["agents"]["entries"]["cto"]["workspace"], "${OPENCLAW_WORKSPACE_DIR}/agents/cto")
-        for key in ("auth", "channels", "bindings"):
+        for key in ("auth", "channels", "bindings", "approvals"):
             self.assertNotIn(key, data)
+        self.assertFalse(data["cron"]["enabled"])
         self.assertNotIn("discord", data["plugins"]["entries"])
         self.assertNotIn("model", data["agents"]["defaults"])
         self.assertNotIn("trustedProxies", data["gateway"])
@@ -186,7 +189,7 @@ class SetupTests(unittest.TestCase):
             starter_config(self.project)
 
     def test_docker_config_registers_the_team_with_container_paths(self):
-        shutil.copy2(PROJECT / "config/openclaw.json", self.project / "config/openclaw.json")
+        (self.project / "config/openclaw.json").write_text(json.dumps(starter_config(PROJECT)))
         tracked = json.loads((PROJECT / "config/openclaw.json").read_text())
         data = docker_config(self.project, Path("/opt/chromium/chrome"))
         self.assertEqual(set(data["agents"]["entries"]), set(tracked["agents"]["entries"]))
@@ -305,6 +308,52 @@ class SetupTests(unittest.TestCase):
             check_native_settings(gateway, dashboard, "renamed.example.ts.net")
         with self.assertRaises(ValueError):
             check_native_settings(gateway, {}, host)
+
+    def test_gateway_port_and_service_names_come_from_this_checkout(self):
+        initialize(self.project)
+        self.assertEqual(gateway_port(self.project), 18789)
+        self.assertEqual(runtime_env("openclaw", self.project)["OPENCLAW_GATEWAY_PORT"], "18789")
+        project_name = env_values(self.project / ".env")["COMPOSE_PROJECT_NAME"]
+        self.assertEqual(service_label("gbrain", self.project), f"dev.{project_name}.gbrain")
+        self.assertNotEqual(service_label("gbrain", self.project), service_label("paperclip", self.project))
+        with (self.project / ".env").open("a") as out:
+            out.write("OPENCLAW_GATEWAY_PORT='18799'\n")
+        self.assertEqual(gateway_port(self.project), 18799)
+        self.assertEqual(runtime_env("openclaw", self.project)["OPENCLAW_GATEWAY_PORT"], "18799")
+        with (self.project / ".env").open("a") as out:
+            out.write("OPENCLAW_GATEWAY_PORT='80'\n")
+        with self.assertRaises(ValueError):
+            gateway_port(self.project)
+
+    def test_native_launcher_appends_local_bin_after_the_pinned_node(self):
+        initialize(self.project)
+        with patch.dict(os.environ, {"PATH": "/unrelated/bin"}):
+            paths = runtime_env("openclaw", self.project)["PATH"].split(os.pathsep)
+        self.assertEqual(paths[-1], str(Path.home() / ".local/bin"))
+        self.assertIn("/unrelated/bin", paths)
+
+    def test_docker_config_drops_host_only_mcp_servers_and_their_tool_entries(self):
+        data = starter_config(PROJECT)
+        data["mcp"] = {"servers": {
+            "gbrain": {"url": "http://127.0.0.1:3131/mcp", "headers": {"Authorization": "Bearer ${GBRAIN_READER_TOKEN}"}},
+            "gbrain_history_qa": {"url": "http://127.0.0.1:3131/mcp"},
+            "local_tool": {"command": "python3", "args": ["tool.py"]},
+            "hosted": {"url": "https://mcp.example.com/mcp", "auth": "oauth"}}}
+        data["tools"]["alsoAllow"] += ["gbrain__search", "hosted__search"]
+        data["agents"]["entries"]["qa"]["tools"] = {"deny": ["gbrain_history_main__*", "local_tool__*"],
+                                                    "alsoAllow": ["read", "gbrain_history_qa__search"]}
+        self.assertEqual(sorted(host_only_mcp_servers(data)), ["gbrain", "gbrain_history_qa", "local_tool"])
+        rendered = without_host_only_mcp(json.loads(json.dumps(data)))
+        self.assertEqual(list(rendered["mcp"]["servers"]), ["hosted"])
+        self.assertNotIn("gbrain__search", rendered["tools"]["alsoAllow"])
+        self.assertIn("hosted__search", rendered["tools"]["alsoAllow"])
+        self.assertEqual(rendered["agents"]["entries"]["qa"]["tools"], {"deny": [], "alsoAllow": ["read"]})
+        (self.project / "config/openclaw.json").write_text(json.dumps(data))
+        docker = docker_config(self.project, Path("/opt/chromium/chrome"))
+        self.assertNotIn("GBRAIN_READER_TOKEN", json.dumps(docker))
+        self.assertFalse(docker["cron"]["enabled"])
+        for entry in docker["agents"]["entries"].values():
+            self.assertEqual(entry["memory"]["search"]["extraPaths"], ["/project/openclaw/workspace/knowledge"])
 
 
 if __name__ == "__main__":

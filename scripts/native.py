@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -11,6 +12,29 @@ sys.path.insert(0, str(PROJECT / "docker"))
 from init import env_values, portable_config, prepare_env, prepare_hermes
 
 starter_config = portable_config
+DEFAULT_GATEWAY_PORT = 18789
+
+
+def project_values(project=PROJECT):
+    return env_values(Path(project).resolve() / ".env")
+
+
+def gateway_port(project=PROJECT):
+    """The native Gateway port selected in .env; it must match gateway.port in the tracked config."""
+    value = project_values(project).get("OPENCLAW_GATEWAY_PORT", "").strip()
+    if not value:
+        return DEFAULT_GATEWAY_PORT
+    if not value.isdigit() or not 1024 <= int(value) <= 65535:
+        raise ValueError("OPENCLAW_GATEWAY_PORT in .env must be a TCP port between 1024 and 65535.")
+    return int(value)
+
+
+def service_label(name, project=PROJECT):
+    """A checkout-specific background-service name, so two checkouts never share one."""
+    project_name = project_values(project).get("COMPOSE_PROJECT_NAME", "").strip() or "demo-agents"
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", project_name):
+        raise ValueError("COMPOSE_PROJECT_NAME in .env must be a plain identifier.")
+    return f"dev.{project_name}.{name}"
 
 
 def base_environment():
@@ -102,8 +126,13 @@ def runtime_env(service, project=PROJECT):
         env.update({"OPENCLAW_WORKSPACE_DIR": str(project / "openclaw/workspace"),
                     "OPENCLAW_AGENT_DIR": str(paths["OPENCLAW_STATE_DIR"] / "agents/main/agent"),
                     "OPENCLAW_LOG_FILE": str(project / ".local/logs/openclaw.log"),
-                    "OPENCLAW_GATEWAY_PORT": "18789",
+                    "OPENCLAW_GATEWAY_PORT": str(gateway_port(project)),
                     "OPENCLAW_GATEWAY_TOKEN": values["OPENCLAW_GATEWAY_TOKEN"]})
+        # Native coding CLIs install here; launchd omits it from PATH. Append it
+        # so the pinned Node/OpenClaw installation keeps precedence.
+        local_bin = str(Path.home() / ".local/bin")
+        if local_bin not in env.get("PATH", "").split(os.pathsep):
+            env["PATH"] = env.get("PATH", "") + os.pathsep + local_bin
         env.pop("OPENCLAW_PROFILE", None)
     elif service == "hermes":
         if not (private / "hermes/config.yaml").is_file():

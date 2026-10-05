@@ -1,31 +1,33 @@
 # Shareable personal-assistant policy for a NEW profile, before model login.
-# Local file/shell tools are opt-in: cwd alone is not a filesystem sandbox.
+# Native file, shell, and Python tools use the OS account's permissions.
+# cwd is a starting directory, not a filesystem sandbox.
 terminal:
   backend: local
   cwd: "."
 platform_toolsets:
-  cli: [memory, todo, clarify]
-  telegram: [memory, todo, clarify]
-  email: [memory, todo, clarify]
+  cli: [terminal, file, code_execution, memory, skills, session_search, todo, clarify]
+  telegram: [terminal, file, code_execution, memory, skills, session_search, todo, clarify]
+  email: [terminal, file, code_execution, memory, skills, session_search, todo, clarify]
 approvals:
   mode: manual
   cron_mode: deny
   single_query_mode: deny
   unattended_mode: deny
 agent:
-  max_turns: 20
+  max_turns: 60
+  # Keep the explicit capability list even inside Git workspaces.
   coding_context: "off"
   disabled_toolsets:
-    - terminal
-    - file
-    - code_execution
     - browser
     - computer_use
     - delegation
     - cronjob
-    - skills
     - connections
     - kanban
+code_execution:
+  mode: project
+  timeout: 300
+  max_tool_calls: 50
 auth:
   adopt_external_logins: false
 security:
@@ -43,4 +45,4 @@ skills:
   auto_load: []
 tools:
   tool_search:
-    enabled: "off"
+    enabled: auto

@@ -1,6 +1,6 @@
 import unittest
 
-from tailscale import check_routes, socket_peers
+from tailscale import check_paperclip, check_routes, selected_services, socket_peers
 
 
 class TailscaleTests(unittest.TestCase):
@@ -34,6 +34,31 @@ class TailscaleTests(unittest.TestCase):
             check_routes({"AllowFunnel": {"demo.example.ts.net:8444": True}}, "demo.example.ts.net")
         with self.assertRaises(ValueError):
             check_routes({"Foreground": {"other": {"TCP": {"8443": {"HTTPS": True}}}}}, "demo.example.ts.net")
+
+    def test_paperclip_is_served_only_in_authenticated_mode_with_a_known_hostname(self):
+        health = {"status": "ok", "deploymentMode": "authenticated"}
+        config = {"server": {"bind": "loopback", "allowedHostnames": ["demo.example.ts.net"]}}
+        check_paperclip(health, config, "Demo.Example.ts.net")
+        with self.assertRaises(ValueError):
+            check_paperclip({**health, "deploymentMode": "local_trusted"}, config, "demo.example.ts.net")
+        with self.assertRaises(ValueError):
+            check_paperclip(health, {"server": {"allowedHostnames": []}}, "demo.example.ts.net")
+        with self.assertRaises(ValueError):
+            check_paperclip(health, {"server": {"bind": "lan", "allowedHostnames": ["demo.example.ts.net"]}}, "demo.example.ts.net")
+        with self.assertRaises(ValueError):
+            check_paperclip(None, config, "demo.example.ts.net")
+
+    def test_paperclip_route_is_optional_and_uses_its_own_https_port(self):
+        self.assertEqual([s[0] for s in selected_services("docker")], ["openclaw", "hermes"])
+        services = selected_services("native", with_paperclip=True)
+        self.assertEqual(services[-1][0], "paperclip")
+        self.assertEqual(services[-1][2], 8445)
+        self.assertEqual(len({https for _, _, https in services}), 3)
+        config = {"TCP": {"8445": {"HTTPS": True}},
+                  "Web": {"demo.example.ts.net:8445": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:4100"}}}}}
+        with self.assertRaises(ValueError):
+            check_routes(config, "demo.example.ts.net", services)
+        check_routes(config, "demo.example.ts.net")
 
 
 if __name__ == "__main__":

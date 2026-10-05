@@ -1,0 +1,72 @@
+{
+  "collapse-filter": true,
+  "search": "-path:README.md",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": true,
+  "colorGroups": [
+    {
+      "query": "path:clients",
+      "color": {
+        "a": 1,
+        "rgb": 15117932
+      }
+    },
+    {
+      "query": "path:orgs",
+      "color": {
+        "a": 1,
+        "rgb": 7386322
+      }
+    },
+    {
+      "query": "path:projects",
+      "color": {
+        "a": 1,
+        "rgb": 4886754
+      }
+    },
+    {
+      "query": "path:people",
+      "color": {
+        "a": 1,
+        "rgb": 10388170
+      }
+    },
+    {
+      "query": "path:decisions",
+      "color": {
+        "a": 1,
+        "rgb": 14589538
+      }
+    },
+    {
+      "query": "path:sources",
+      "color": {
+        "a": 1,
+        "rgb": 6668421
+      }
+    },
+    {
+      "query": "path:checklists",
+      "color": {
+        "a": 1,
+        "rgb": 14578561
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.518713248970312,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 1,
+  "close": false
+}

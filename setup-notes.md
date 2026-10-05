@@ -187,3 +187,91 @@ agents, and started its Gateway. Health and dashboard requests returned 200;
 anonymous tool access returned 401. Compose configuration also rendered without
 Discord credentials; containers were not started. The temporary process and
 state were removed. No model provider was configured or model reply tested.
+
+## Knowledge vault, GBrain, Paperclip and Tailscale update, 4 October 2026
+
+Checks ran on macOS with the installed OpenClaw `2026.9.8`, Node `26.10.0`,
+GBrain `0.60.37.0`, Paperclip `2026.1001.0`, and Hermes `0.21.5`. The reference
+OpenClaw release moved from `2026.9.6` to `2026.9.8` (npm package, Docker image
+tag `2026.9.8-browser`, and the Discord plugin version were confirmed to exist).
+The Docker daemon was stopped; Compose configuration rendered without it.
+
+### Offline checks
+
+- 49 setup, privacy, publication, Tailscale, Discord-helper and GBrain tests,
+  10 Paperclip tests, and 6 Node adapter tests passed. New coverage: the
+  configurable Gateway port and checkout-specific service labels, `~/.local/bin`
+  appended after the pinned Node, removal of host-only MCP servers and GBrain
+  tool entries from the Docker config, the Paperclip Tailscale rules
+  (authenticated mode and allowed hostname required), the Paperclip role map,
+  reporting lines, wake instructions and export redaction.
+- Configuration privacy, local Markdown links and anchors (94 files), shell
+  block syntax, `py_compile`, and `git diff --check` passed. The tracked config
+  validates against the `2026.9.8` schema with `tools.exec.mode: ask`,
+  `memory.search.provider: none`, per-agent `knowledge/` search paths and the
+  `*__*` MCP deny that replaced `group:plugins` (which blocked Memory Core).
+- The scratch checks below ran with a fictional 30-note dataset in the vault;
+  it was removed before publication. The starter ships the vault index,
+  conventions and Obsidian settings only, and the GBrain live check was
+  re-run against that empty vault.
+
+### Disposable native copy
+
+A scratch copy on alternate ports (Gateway `18799`, GBrain `3132`, Paperclip
+`3107` with embedded PostgreSQL `54331`) used generated credentials and no
+provider login; the live instance on the default ports was not touched.
+
+- Initialization, config validation and `agents list` registered nine agents.
+  Health and dashboard returned 200, anonymous tool access 401, an
+  authenticated nonexistent tool 404. The dashboard login with the generated
+  token opened the Chief of Staff chat in a browser (no model configured).
+- Keyword memory search for CTO returned the current and superseded decision
+  notes of the dataset with scores and vault-relative paths.
+- Synthetic Telegram and Discord tokens (Chief of Staff, CTO, SWE) were wired
+  with `channels add --use-env` and a simulated Discord helper `--apply`
+  (identity check bypassed): config validation, one binding per bot, the
+  private include, three instruction sections and the privacy check passed;
+  after a restart the Gateway rejected the fake tokens with 401 from Telegram
+  and Discord and retried, as expected. Real round trips need real bots.
+- GBrain: the pinned binary verified against its checksum, `init` imported the
+  vault, `run` served on loopback, `configure` added the MCP server and tools,
+  config validation and the privacy check passed, the MCP probe discovered six
+  tools, and the live check passed (nine concurrent readers, denied writes and
+  anonymous access, automatic create, edit and delete sync).
+- Paperclip: `npm ci` from the regenerated lockfile, `instance.py init` on the
+  selected ports with telemetry and update checks off, `team.py seed`, joins
+  for CTO, SWE and QA (invite, accept, approve, claim), adapter settings with
+  named-agent routing and issue sessions, one exact callback entry per agent in
+  the scratch Gateway allowlist, no device pairing request. The smoke task woke
+  the scratch Gateway in a `paperclip:issue` session and failed only for lack
+  of a provider login. The budget fixture produced the 80-cent warning, the
+  100-cent pause, a 409 on wake, a recorded recovery and an accepted wake. The
+  routine fired once and returned to paused; the dependency chain was created;
+  review decisions were refused outside `in_review`; the raw export contained
+  the Gateway token and the redacted copy did not.
+- `instance.py secure` switched the scratch instance to authenticated mode:
+  anonymous API calls returned 401 or 403, the console served only the allowed
+  hostname and loopback (an unknown `Host` got 403) and redirected to its login
+  page, the helper reported the board-token hint, the agent callback still
+  worked with its own key, and `bootstrap-ceo --force` printed a one-time
+  invite link.
+- Hermes initialized from the updated template with the expanded toolsets on
+  CLI, Telegram and email.
+- In a second scratch copy: the GBrain macOS service installed, loaded,
+  stopped and started under its checkout-specific label; session capture
+  provisioned nine per-agent sources and read-only tokens, `configure` added
+  the nine history servers with per-agent allow and cross-agent deny entries,
+  config validation and the privacy check passed, `enable` wrote the checkpoint
+  once, `sync` and `status` ran with zero captured events (no sessions yet),
+  and `disable` followed by `enable` preserved the checkpoint. The Paperclip
+  service started under its label, answered health, and stopped; its embedded
+  PostgreSQL shut down a few seconds after the server. Both scratch services
+  were removed afterwards.
+
+### Not executed
+
+A real model reply, Telegram and Discord message round trips, a real tailnet
+(Tailscale was stopped on the host), Serve routes, the Linux route, Docker
+containers, OpenAI embeddings, and session capture with actual conversations.
+These need an operator's own credentials; follow the component guides and
+record the results here.

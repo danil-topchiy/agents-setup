@@ -18,9 +18,13 @@ before committing; use private environment references or an ignored include.
 | `config/openclaw-policy.patch.json` | Starting tool policy; reapplied after onboarding on either route | Yes |
 | `config/discord-team-instructions.md` | Template for the Discord section the helper installs in each agent's `AGENTS.md` | Yes |
 | `openclaw/workspace/agents/<id>/` | Specialist agent workspaces; `openclaw/workspace/` is Chief of Staff | Yes |
+| `openclaw/workspace/knowledge/` | Shared Obsidian vault indexed by every team agent; per-device `.obsidian` state is ignored | Yes |
+| `openclaw/workspace/agents/<id>/MEMORY.md`, `**/memory/`, `**/output/` | Live agent memory and deliverables | No |
+| `paperclip/` | Pinned Paperclip package and helpers; `paperclip/.local/` holds its database, keys, callbacks and exports | Code yes, `.local/` no |
+| `.local/gbrain/` | GBrain binary, derived index, snapshot, reader and admin tokens | No |
 | `.env.example` | Documented variables with blank credentials | Yes |
 | `.env` | Private credentials, email/model/owner values, and native config/state paths | No |
-| `.local/openclaw.env` | Additional private OpenClaw integration variables, including Discord IDs and bot tokens | No |
+| `.local/openclaw.env` | Additional private OpenClaw integration variables: Discord IDs and bot tokens, `GBRAIN_*` reader tokens, an optional embeddings key | No |
 | `.local/native/` | Default native account/session state and Hermes config | No |
 | `.local/logs/` | Native Gateway file log and service output | No |
 | OpenClaw config backups and rejected writes | Generated next to the active JSON | No |
@@ -117,6 +121,11 @@ Root `.env` selects `OPENCLAW_CONFIG_PATH`, `OPENCLAW_STATE_DIR`, and
 `OPENCLAW_HOME`. The defaults put the config in this repository and state
 under `.local/native/openclaw`. An existing installation can select its own
 private state directory without moving databases, account records or sessions.
+Optional `OPENCLAW_GATEWAY_PORT`, `GBRAIN_PORT`, `PAPERCLIP_PORT`, and
+`PAPERCLIP_DB_PORT` move the listeners for a second checkout on one host; the
+Gateway port must match `gateway.port` and the control UI origins in the
+tracked config. `COMPOSE_PROJECT_NAME` also names this checkout's background
+services.
 
 The launcher computes `OPENCLAW_WORKSPACE_DIR` from this checkout,
 `OPENCLAW_AGENT_DIR` from the selected state directory, and `OPENCLAW_LOG_FILE`
@@ -157,10 +166,15 @@ or host account state into a fresh Docker volume.
 ```sh
 python3 scripts/check_config_privacy.py
 git diff -- config/openclaw.json openclaw/workspace
-git check-ignore .env .local/openclaw.env config/openclaw-auth.private.json config/openclaw-discord.private.json
+git check-ignore .env .local/openclaw.env config/openclaw-auth.private.json config/openclaw-discord.private.json paperclip/.local/team.json
 git add config/openclaw.json openclaw/workspace .env.example .gitignore
 git diff --cached -- config/openclaw.json .env.example
 ```
+
+After `scripts/gbrain.py configure`, the tracked config gains `mcp.servers.gbrain`
+with `${GBRAIN_READER_TOKEN}` and the six `gbrain__*` tool entries; the token
+itself stays in `.local/openclaw.env`. Review vault edits under
+`openclaw/workspace/knowledge/` like any other content before committing.
 
 After the Discord helper's `--apply`, the tracked config gains the Discord
 include, the enabled plugin and one binding per bot, and each configured

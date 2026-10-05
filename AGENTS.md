@@ -2,7 +2,9 @@
 
 Read `README.md`, then the selected Docker or native guide and
 `README-tailscale.md`. Work from the repository root.
-For Telegram or AgentMail, also read `README-integrations.md`.
+For Telegram or AgentMail, also read `README-integrations.md`; for the
+knowledge vault, GBrain, or Paperclip, read `README-memory.md`,
+`README-gbrain.md`, or `README-paperclip.md`.
 
 - Inspect installations and ports before installing or starting anything.
   Use pinned releases for a new installation. Reuse existing compatible
@@ -38,6 +40,20 @@ For Telegram or AgentMail, also read `README-integrations.md`.
   and validate one bot per agent from private IDs and tokens, review the ignored
   candidate, then `--apply` with the Gateway stopped and restart it. Only agents
   with a token are put on Discord. Keep tokens and Discord IDs out of chat and Git.
+- The agents share the Obsidian vault `openclaw/workspace/knowledge/` through
+  their memory search paths; keyword search is the default and needs no key.
+  Chief of Staff owns vault edits. Specialist `MEMORY.md` files are ignored.
+- GBrain is optional and native-only: `scripts/gbrain.py install|init|run|configure`.
+  It stays on loopback with a read-only token in `.local/openclaw.env`; the
+  tracked config holds `${GBRAIN_READER_TOKEN}`. Never run a second database
+  owner against `.local/gbrain/`.
+- Paperclip is optional: pinned in `paperclip/`, private state in
+  `paperclip/.local/`, driven by `paperclip/instance.py` and `paperclip/team.py`.
+  It starts in `local_trusted` mode on loopback; never forward that port. Serve
+  it through Tailscale only after `instance.py secure` and a restart.
+- Background services get checkout-specific names from `COMPOSE_PROJECT_NAME`
+  (`dev.<project>.gbrain`, `dev.<project>.paperclip`). A second checkout on one
+  host sets `OPENCLAW_GATEWAY_PORT`, `GBRAIN_PORT`, and `PAPERCLIP_PORT` in `.env`.
 - Record observed versions, checks and remaining failures in `setup-notes.md`.
   Distinguish executed checks from instructions prepared for a future run.
 - Before publication, scan both tracked files and reachable Git history with

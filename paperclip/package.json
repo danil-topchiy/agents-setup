@@ -1,0 +1,8 @@
+{
+  "name": "demo-agents-paperclip",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Pinned Paperclip installation for the OpenClaw agent team",
+  "engines": { "node": ">=24.11.0" },
+  "dependencies": { "paperclipai": "2026.1001.0" }
+}

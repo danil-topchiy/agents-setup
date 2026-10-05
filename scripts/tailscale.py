@@ -12,10 +12,42 @@ import tempfile
 import urllib.error
 import urllib.request
 
-from native import runtime_env
+from native import DEFAULT_GATEWAY_PORT, gateway_port, project_values, runtime_env
 
 KIT = Path(__file__).resolve().parent.parent
-SERVICES = (("openclaw", 18789, 8443), ("hermes", 9119, 8444))
+SERVICES = (("openclaw", DEFAULT_GATEWAY_PORT, 8443), ("hermes", 9119, 8444))
+PAPERCLIP_HTTPS_PORT = 8445
+PAPERCLIP_CONFIG = KIT / "paperclip/.local/instances/team/config.json"
+
+
+def paperclip_port():
+    value = project_values(KIT).get("PAPERCLIP_PORT", "").strip() or "3100"
+    if not value.isdigit():
+        raise ValueError("PAPERCLIP_PORT in .env must be a TCP port.")
+    return int(value)
+
+
+def selected_services(mode, with_paperclip=False):
+    """Local listeners and their HTTPS ports; Docker publishes the Gateway on the default port."""
+    openclaw = DEFAULT_GATEWAY_PORT if mode == "docker" else gateway_port(KIT)
+    services = [("openclaw", openclaw, 8443), ("hermes", 9119, 8444)]
+    if with_paperclip:
+        services.append(("paperclip", paperclip_port(), PAPERCLIP_HTTPS_PORT))
+    return tuple(services)
+
+
+def check_paperclip(health, config, hostname):
+    """Paperclip may only be served when it requires login and knows the browser hostname."""
+    if not health or health.get("status") != "ok":
+        raise ValueError("Start Paperclip first; its health endpoint did not answer.")
+    if health.get("deploymentMode") != "authenticated":
+        raise ValueError("Paperclip runs in local_trusted mode, where every visitor would be the board. "
+                         "Run `python3 paperclip/instance.py secure --allow-host " + hostname + "`, restart it, then rerun.")
+    server = (config or {}).get("server", {})
+    allowed = [h.lower() for h in server.get("allowedHostnames", [])]
+    if hostname.lower() not in allowed or server.get("bind", "loopback") != "loopback":
+        raise ValueError("Paperclip must allow this Tailscale hostname and stay on loopback; "
+                         "run `python3 paperclip/instance.py secure --allow-host " + hostname + "` and restart it.")
 
 
 def run(args, *, data=None):
@@ -33,7 +65,7 @@ def native(service, *args, data=None):
     return run([sys.executable, str(KIT / "scripts/native.py"), service, *args], data=data)
 
 
-def gateway_patch(gateway, hostname, peers, mode):
+def gateway_patch(gateway, hostname, peers, mode, port=DEFAULT_GATEWAY_PORT):
     if gateway.get("auth", {}).get("mode", "token") != "token":
         raise ValueError("Expected token authentication; existing auth was left unchanged.")
     ui = gateway.get("controlUi", {})
@@ -41,17 +73,17 @@ def gateway_patch(gateway, hostname, peers, mode):
         raise ValueError("Restore normal OpenClaw device authentication before sharing it.")
     origin = f"https://{hostname}:8443"
     return {"gateway": {
-        "bind": "lan" if mode == "docker" else "loopback", "port": 18789,
+        "bind": "lan" if mode == "docker" else "loopback", "port": port,
         "trustedProxies": list(dict.fromkeys([*gateway.get("trustedProxies", []), *peers])),
         "controlUi": {"allowedOrigins": list(dict.fromkeys([*ui.get("allowedOrigins", []), origin]))},
         "auth": {"mode": "token", "allowTailscale": False}, "tailscale": {"mode": "off"},
     }}
 
 
-def check_native_settings(gateway, dashboard, hostname):
+def check_native_settings(gateway, dashboard, hostname, port=DEFAULT_GATEWAY_PORT):
     origin = f"https://{hostname}:8443"
     ui = gateway.get("controlUi", {})
-    valid = (gateway.get("bind") == "loopback" and gateway.get("port") == 18789
+    valid = (gateway.get("bind") == "loopback" and gateway.get("port") == port
              and gateway.get("auth", {}).get("mode") == "token"
              and gateway.get("auth", {}).get("allowTailscale") is False
              and gateway.get("tailscale", {}).get("mode") == "off"
@@ -63,8 +95,8 @@ def check_native_settings(gateway, dashboard, hostname):
         raise ValueError("Run --mode native --configure-only, restart both native servers, then rerun --mode native.")
 
 
-def serve(hostname):
-    for service, local_port, https_port in SERVICES:
+def serve(hostname, services=SERVICES):
+    for service, local_port, https_port in services:
         # Let the CLI display HTTPS-enablement instructions for a new tailnet.
         command = ["tailscale", "serve", "--bg", "--yes", f"--https={https_port}", f"http://127.0.0.1:{local_port}"]
         if subprocess.run(command, cwd=KIT).returncode:
@@ -102,8 +134,8 @@ def discover_peer(service, port):
     return addresses.pop()
 
 
-def check_routes(config, hostname):
-    for _, local_port, https_port in SERVICES:
+def check_routes(config, hostname, services=SERVICES):
+    for _, local_port, https_port in services:
         port, endpoint = str(https_port), f"{hostname}:{https_port}"
         expected = {"Handlers": {"/": {"Proxy": f"http://127.0.0.1:{local_port}"}}}
         tcp, web = config.get("TCP", {}), config.get("Web", {})
@@ -121,9 +153,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("docker", "native"), default="docker")
     parser.add_argument("--configure-only", action="store_true", help="Configure native apps before starting them; do not create Serve routes.")
+    parser.add_argument("--with-paperclip", action="store_true", help="Also serve the Paperclip console on HTTPS 8445 (native, authenticated mode only).")
     args = parser.parse_args()
     if args.configure_only and args.mode != "native":
         raise ValueError("--configure-only applies to native runtimes.")
+    if args.with_paperclip and args.mode != "native":
+        raise ValueError("--with-paperclip applies to the native route; see README-paperclip.md for Docker.")
+    services = selected_services(args.mode, args.with_paperclip)
     if not (KIT / ".env").is_file():
         raise ValueError("Run python3 docker/init.py env or python3 scripts/native.py init first.")
     status = json.loads(run(["tailscale", "status", "--json"]))
@@ -133,7 +169,7 @@ def main():
         raise ValueError("Open Tailscale and sign in on this host first.")
     if not re.fullmatch(r"[a-z0-9][a-z0-9.-]*\.ts\.net", hostname):
         raise ValueError("Tailscale has not supplied a usable DNS name.")
-    check_routes(json.loads(run(["tailscale", "serve", "status", "--json"])) or {}, hostname)
+    check_routes(json.loads(run(["tailscale", "serve", "status", "--json"])) or {}, hostname, services)
     if args.mode == "docker":
         running = set(compose("ps", "--status", "running", "--services").split())
         if not {"openclaw", "hermes"}.issubset(running):
@@ -145,7 +181,8 @@ def main():
         runtime_env("openclaw")
         runtime_env("hermes")
         gateway = json.loads(native("openclaw", "config", "get", "gateway", "--json"))
-        patch = gateway_patch(gateway, hostname, ["127.0.0.1", "::1"], "native")
+        port = gateway_port(KIT)
+        patch = gateway_patch(gateway, hostname, ["127.0.0.1", "::1"], "native", port)
         if args.configure_only:
             with tempfile.TemporaryDirectory(dir=KIT / ".local") as scratch:
                 path = Path(scratch) / "gateway.patch.json"
@@ -156,12 +193,17 @@ def main():
             print("Native settings ready. Start both servers, then run this helper with --mode native.")
             return
         dashboard = json.loads(native("hermes", "config", "get", "dashboard", "--json"))
-        check_native_settings(gateway, dashboard, hostname)
-        for _, port, _ in SERVICES:
-            path = "/healthz" if port == 18789 else "/api/health"
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=5) as response:
+        check_native_settings(gateway, dashboard, hostname, port)
+        for service, local_port, _ in services:
+            path = "/healthz" if service == "openclaw" else "/api/health"
+            with urllib.request.urlopen(f"http://127.0.0.1:{local_port}{path}", timeout=5) as response:
                 if response.status != 200:
-                    raise ValueError("Start both native servers as described in README-native.md first.")
+                    raise ValueError("Start the native servers as described in README-native.md first.")
+        if args.with_paperclip:
+            with urllib.request.urlopen(f"http://127.0.0.1:{paperclip_port()}/api/health", timeout=5) as response:
+                health = json.load(response)
+            config = json.loads(PAPERCLIP_CONFIG.read_text()) if PAPERCLIP_CONFIG.is_file() else {}
+            check_paperclip(health, config, hostname)
         try:
             urllib.request.urlopen("http://127.0.0.1:9119/api/auth-check", timeout=5).close()
         except urllib.error.HTTPError as error:
@@ -169,7 +211,7 @@ def main():
                 raise ValueError("Hermes did not require login; restart its project-local dashboard before sharing it.")
         else:
             raise ValueError("Hermes did not require login; restart its project-local dashboard before sharing it.")
-        serve(hostname)
+        serve(hostname, services)
         return
     # The CLI merges this small patch and validates it; other settings and secrets stay intact.
     apply_patch = """import os, subprocess, sys, tempfile

@@ -1,6 +1,6 @@
 services:
   openclaw:
-    image: ghcr.io/openclaw/openclaw:2026.9.6-browser
+    image: ghcr.io/openclaw/openclaw:2026.9.8-browser
     user: "${HOST_UID:-${WORKSHOP_UID:-1000}}:${HOST_GID:-${WORKSHOP_GID:-1000}}"
     init: true
     restart: unless-stopped

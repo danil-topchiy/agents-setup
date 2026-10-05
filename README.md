@@ -8,8 +8,9 @@ step by step with/for you. Start with this prompt:
 > the Docker Compose route unless I choose native execution. Set up private
 > Tailscale access for both dashboards and keep them running in the background
 > with automatic restarts. Keep OpenClaw token authentication enabled. Walk me
-> through optional Telegram, Discord and AgentMail setup if I want them. Explain
-> each change, let me enter credentials privately, and verify each step with me.
+> through optional Telegram, Discord, AgentMail, GBrain and Paperclip setup if I
+> want them. Explain each change, let me enter credentials privately, and verify
+> each step with me.
 
 **OpenClaw** runs a team of agents on one Gateway: Chief of Staff plus eight
 specialists. Talk to Chief of Staff in the dashboard or through a connected
@@ -37,9 +38,11 @@ Starting permissions: OpenClaw agents read and write inside their own
 workspace, run shell commands from an approval allowlist (unlisted commands ask
 first), use memory tools and the skill workshop, and delegate to each other
 (depth 2, two children per agent, four concurrent, ten-minute runs). Browser,
-web, messaging tools, automations, and scheduling are off. Hermes has memory,
-task-planning, and clarification tools. These rules are not an operating-system
-sandbox. See the [Hermes guide](README-hermes.md) for its permissions.
+web, messaging tools, MCP connectors, automations, and scheduling are off.
+Hermes has file tools, shell commands, Python execution, skills, conversation
+recall, memory, planning, and clarification. These rules are not an
+operating-system sandbox. See the [Hermes guide](README-hermes.md) for its
+permissions and example tasks.
 
 ## The team
 
@@ -84,6 +87,21 @@ the result returns to the requesting conversation. No chat channel is needed.
   CTO -> SWE -> QA handoffs in a channel, and a DM per agent. See
   [README-discord-collaboration.md](README-discord-collaboration.md).
 
+## Knowledge, memory and the board
+
+- **Knowledge vault.** `openclaw/workspace/knowledge/` is an Obsidian vault that
+  every team agent searches: folders for your company, clients, people,
+  projects, dated sources, decisions and checklists, with documented
+  conventions and no sample data. Agents keep their own notes separately.
+  See [memory and the vault](README-memory.md).
+- **GBrain, optional.** A shared keyword index and reference graph over the same
+  Markdown, read-only for the nine agents through MCP, with optional capture of
+  new conversations per agent. See [GBrain](README-gbrain.md).
+- **Paperclip, optional.** A control plane that assigns tasks to the OpenClaw
+  agents, records every run, enforces human review and reported-cost budgets,
+  and runs routines. Pinned in `paperclip/`; served privately through Tailscale
+  in authenticated mode. See [Paperclip](README-paperclip.md).
+
 ## Make the assistants yours
 
 Replace bracketed placeholders such as `[Your name]` and `[Company or team name]`
@@ -97,6 +115,7 @@ treated as unknown details.
 | Your preferences | [USER.md](openclaw/workspace/USER.md), `agents/<id>/USER.md` | [USER.md](hermes/context/USER.md) |
 | Working rules | [AGENTS.md](openclaw/workspace/AGENTS.md), `agents/<id>/AGENTS.md` | [AGENTS.md](hermes/project/AGENTS.md) |
 | Durable facts | [MEMORY.md](openclaw/workspace/MEMORY.md) | [MEMORY.md](hermes/context/MEMORY.md) |
+| Shared knowledge | [knowledge/](openclaw/workspace/knowledge/README.md) | reads the same folder on request |
 | Skills | [skills/meeting-brief](openclaw/workspace/skills/meeting-brief/SKILL.md) | - |
 
 Chief of Staff's [PROJECT.md](openclaw/workspace/PROJECT.md) has placeholders
@@ -131,11 +150,14 @@ folder apply to the native route. Both routes use
 | --- | --- | --- |
 | OpenClaw | `http://127.0.0.1:18789` | `https://HOST.TAILNET.ts.net:8443` |
 | Hermes | `http://127.0.0.1:9119` | `https://HOST.TAILNET.ts.net:8444` |
+| Paperclip, optional | `http://127.0.0.1:3100` | `https://HOST.TAILNET.ts.net:8445`, authenticated mode only |
 
 Use one route at a time: both use the same ports and project files. Docker and
 native account settings are separate; each needs its own model login. Existing
 host profiles stay separate. Native commands select this checkout's chosen
-state explicitly.
+state explicitly. A second native checkout on the same host can move its
+Gateway with `OPENCLAW_GATEWAY_PORT` in `.env`; GBrain and Paperclip ports are
+selectable the same way.
 
 ## Configuration and credentials
 
@@ -187,7 +209,8 @@ Docker's `-d` runs both in the background; both already have
 `restart: unless-stopped`. Enable Docker and Tailscale at host startup/login
 and keep the host awake. See [Docker background operation](README-docker.md#keep-running-in-the-background).
 
-The reference releases are OpenClaw `2026.9.6` and Hermes `v2026.9.24` (`0.21.5`).
-See [setup-notes.md](setup-notes.md) for verification results. Keep keys,
-sessions and personal memory in ignored private state; commit reviewed persona
-and configuration changes using explicit paths.
+The reference releases are OpenClaw `2026.9.8`, Hermes `v2026.9.24` (`0.21.5`),
+GBrain `0.60.37.0`, and Paperclip `2026.1001.0`. See [setup-notes.md](setup-notes.md)
+for verification results. Keep keys, sessions and personal memory in ignored
+private state; commit reviewed persona and configuration changes using
+explicit paths.
